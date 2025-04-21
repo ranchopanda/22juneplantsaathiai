@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -12,6 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { ArrowLeft, BarChart3, Droplets, Thermometer, Leaf, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { predictYield, storeAnalysisData } from "@/utils/geminiAI";
+import { YieldPredictionResult } from "@/utils/services/analysis/yieldPrediction";
 import { saveFarmSnapshot } from "@/utils/farmDataSnapshots";
 
 const YieldPrediction = () => {

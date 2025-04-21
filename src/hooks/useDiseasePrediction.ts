@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { DetectionResult } from "@/types/DetectionResult";
 import { AnalysisData } from "@/utils/types/analysisTypes";
-import { analyzePlantDisease, imageToBase64 } from "@/utils/geminiAI";
+import { imageToBase64 } from "@/utils/geminiAI";
+import { analyzePlantDisease } from "@/utils/services/analysis/plantDiseaseAnalysis";
 import { storeAnalysisData } from "@/utils/storage/analysisStorage";
 import { saveFarmSnapshot } from "@/utils/farmDataSnapshots";
 import { useToast } from "@/hooks/use-toast";
@@ -49,14 +49,23 @@ export const useDiseasePrediction = () => {
       const mappedResult: DetectionResult = {
         disease_name: analysisData.disease_name || "Unknown",
         confidence: analysisData.confidence || 0,
-        description: analysisData.description || "No description available",
-        recommendations: analysisData.recommendations || [],
-        treatment: analysisData.treatment || [],
-        severity: analysisData.severity || "Unknown",
-        crop_type: analysisData.crop_type || "Unknown",
-        yield_impact: analysisData.yield_impact || "Unknown",
-        spread_risk: analysisData.spread_risk || "Unknown",
-        recovery_chance: analysisData.recovery_chance || "Unknown",
+        disease_stage: "Unknown", // Default value as analysisData doesn't have this field
+        symptoms: [analysisData.description || "Unknown symptoms"],
+        action_plan: analysisData.recommendations || [],
+        treatments: {
+          organic: analysisData.treatment?.slice(0, 2) || [],
+          chemical: analysisData.treatment?.slice(2) || []
+        },
+        faqs: [
+          {
+            question: "What is this disease?",
+            answer: analysisData.description || "Unknown disease"
+          }
+        ],
+        tips: analysisData.recommendations || [],
+        yield_impact: analysisData.yield_impact,
+        spread_risk: analysisData.spread_risk,
+        recovery_chance: analysisData.recovery_chance,
         bounding_boxes: analysisData.bounding_boxes
       };
 

@@ -18,6 +18,7 @@ import {
   storeAnalysisData, 
   getAnalysisHistory 
 } from "@/utils/geminiAI";
+import { SoilAnalysisResult } from "@/utils/services/analysis/soilAnalysis";
 import { saveFarmSnapshot, getFarmSnapshots, FarmDataSnapshot } from "@/utils/farmDataSnapshots";
 
 function isSoilAnalysisResult(data: unknown): data is SoilAnalysisResult {
@@ -30,18 +31,6 @@ function isSoilAnalysisResult(data: unknown): data is SoilAnalysisResult {
     'nutrients' in data &&
     'recommendations' in data
   );
-}
-
-interface SoilAnalysisResult {
-  soil_type: string;
-  confidence: number;
-  ph_level: string;
-  nutrients: {
-    name: string;
-    level: "Low" | "Medium" | "High";
-    recommendation: string;
-  }[];
-  recommendations: string[];
 }
 
 const SoilAnalysis = () => {
