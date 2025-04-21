@@ -1,73 +1,81 @@
-# Welcome to your Lovable project
+# Anand Krishi - Plant Disease Detection
 
-## Project info
+A comprehensive plant disease detection application that uses Gemini AI to provide accurate analysis and recommendations.
 
-**URL**: https://lovable.dev/projects/7a9dff42-41ee-4674-9ff4-760a6c05ccb8
+## Features
 
-## How can I edit this code?
+- Plant disease detection using Gemini AI
+- Soil analysis
+- Yield prediction
+- Weather information
+- Crop information
 
-There are several ways of editing your application.
+## Getting Started
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7a9dff42-41ee-4674-9ff4-760a6c05ccb8) and start prompting.
+- Node.js (v16 or higher)
+- npm or yarn
 
-Changes made via Lovable will be committed automatically to this repo.
+### Installation
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/anand-krishi.git
+cd anand-krishi
 ```
 
-**Edit a file directly in GitHub**
+2. Install dependencies
+```bash
+npm install
+# or
+yarn install
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. Set up environment variables
+Create a `.env` file in the root directory with the following variables:
 
-**Use GitHub Codespaces**
+```
+# Gemini AI API Key
+# Get a valid API key from: https://ai.google.dev/tutorials/web_quickstart
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Running the Application
 
-## What technologies are used for this project?
+```bash
+npm run dev
+# or
+yarn dev
+```
 
-This project is built with:
+The application will be available at http://localhost:8080
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## API Keys Setup
 
-## How can I deploy this project?
+### Gemini AI API Key
 
-Simply open [Lovable](https://lovable.dev/projects/7a9dff42-41ee-4674-9ff4-760a6c05ccb8) and click on Share -> Publish.
+1. Go to [Google AI Studio](https://ai.google.dev/tutorials/web_quickstart)
+2. Create an account or sign in
+3. Create a new API key
+4. Copy the API key and paste it in your `.env` file
 
-## Can I connect a custom domain to my Lovable project?
+## Troubleshooting
 
-Yes it is!
+### API Key Issues
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+If you're seeing API key errors, make sure:
+1. You have a valid Gemini API key in your `.env` file
+2. The API key is correctly formatted
+3. You have sufficient credits/quota for the Gemini API service
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Geolocation Issues
+
+If you're having issues with geolocation:
+1. Make sure your browser has permission to access your location
+2. Check if your device's location services are enabled
+3. Try using a different browser
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
