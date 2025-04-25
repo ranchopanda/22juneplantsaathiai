@@ -1,4 +1,3 @@
-
 import { DetectionResult } from "@/types/DetectionResult";
 
 interface AnalysisResultsProps {
@@ -17,40 +16,79 @@ export const AnalysisResults = ({ result }: AnalysisResultsProps) => {
       <p>
         <span className="font-bold">Confidence:</span> {result.confidence}%
       </p>
-      <p>
-        <span className="font-bold">Description:</span> {result.description}
-      </p>
+      
+      {/* Symptoms section */}
       <div>
-        <span className="font-bold">Recommendations:</span>
+        <span className="font-bold">Symptoms:</span>
         <ul>
-          {result.recommendations.map((recommendation, index) => (
-            <li key={index}>{recommendation}</li>
+          {result.symptoms && result.symptoms.map((symptom, index) => (
+            <li key={index}>{symptom}</li>
           ))}
         </ul>
       </div>
+      
+      {/* Action plan replaces recommendations */}
       <div>
-        <span className="font-bold">Treatment:</span>
+        <span className="font-bold">Action Plan:</span>
         <ul>
-          {result.treatment.map((treatment, index) => (
-            <li key={index}>{treatment}</li>
+          {result.action_plan && result.action_plan.map((action, index) => (
+            <li key={index}>{action}</li>
           ))}
         </ul>
       </div>
+      
+      {/* Treatments section */}
+      {result.treatments && (
+        <div>
+          <span className="font-bold">Treatments:</span>
+          <div className="ml-4">
+            {result.treatments.organic && result.treatments.organic.length > 0 && (
+              <div>
+                <span className="font-semibold">Organic:</span>
+                <ul>
+                  {result.treatments.organic.map((treatment, index) => (
+                    <li key={index}>{treatment}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {result.treatments.chemical && result.treatments.chemical.length > 0 && (
+              <div>
+                <span className="font-semibold">Chemical:</span>
+                <ul>
+                  {result.treatments.chemical.map((treatment, index) => (
+                    <li key={index}>{treatment}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
       <p>
-        <span className="font-bold">Severity:</span> {result.severity}
+        <span className="font-bold">Disease Stage:</span> {result.disease_stage}
       </p>
-      <p>
-        <span className="font-bold">Crop Type:</span> {result.crop_type}
-      </p>
-      <p>
-        <span className="font-bold">Yield Impact:</span> {result.yield_impact}
-      </p>
-      <p>
-        <span className="font-bold">Spread Risk:</span> {result.spread_risk}
-      </p>
-      <p>
-        <span className="font-bold">Recovery Chance:</span> {result.recovery_chance}
-      </p>
+      
+      {/* Only display these fields if they exist */}
+      {result.yield_impact && (
+        <p>
+          <span className="font-bold">Yield Impact:</span> {result.yield_impact}
+        </p>
+      )}
+      
+      {result.spread_risk && (
+        <p>
+          <span className="font-bold">Spread Risk:</span> {result.spread_risk}
+        </p>
+      )}
+      
+      {result.recovery_chance && (
+        <p>
+          <span className="font-bold">Recovery Chance:</span> {result.recovery_chance}
+        </p>
+      )}
     </div>
   );
 };
