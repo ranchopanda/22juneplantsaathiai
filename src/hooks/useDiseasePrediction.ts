@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DetectionResult } from "@/types/DetectionResult";
 import { AnalysisData } from "@/utils/types/analysisTypes";
 import { imageToBase64 } from "@/utils/geminiAI";
-import { analyzePlantDisease } from "@/utils/services/analysis/plantDiseaseAnalysis";
+import { analyzePlantDisease, analyzeWithAdvancedModel } from "@/utils/services/analysis/plantDiseaseAnalysis";
 import { storeAnalysisData } from "@/utils/storage/analysisStorage";
 import { saveFarmSnapshot } from "@/utils/farmDataSnapshots";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +12,8 @@ export const useDiseasePrediction = () => {
   const [base64Image, setBase64Image] = useState<string | null>(null);
   const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [previousAnalysisData, setPreviousAnalysisData] = useState<AnalysisData | null>(null);
+  const [isAdvancedAnalysis, setIsAdvancedAnalysis] = useState<boolean>(false);
   const { toast } = useToast();
 
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,6 +34,33 @@ export const useDiseasePrediction = () => {
     }
   };
 
+  // Maps AnalysisData to DetectionResult format
+  const mapToDetectionResult = (analysisData: AnalysisData): DetectionResult => {
+    return {
+      disease_name: analysisData.disease_name || "Unknown",
+      confidence: analysisData.confidence || 0,
+      disease_stage: "Unknown", // Default value as analysisData doesn't have this field
+      symptoms: [analysisData.description || "Unknown symptoms"],
+      action_plan: analysisData.recommendations || [],
+      treatments: {
+        organic: analysisData.treatment?.slice(0, Math.ceil(analysisData.treatment.length / 2)) || [],
+        chemical: analysisData.treatment?.slice(Math.ceil(analysisData.treatment.length / 2)) || []
+      },
+      faqs: [
+        {
+          question: "What is this disease?",
+          answer: analysisData.description || "Unknown disease"
+        }
+      ],
+      tips: analysisData.recommendations || [],
+      yield_impact: analysisData.yield_impact,
+      spread_risk: analysisData.spread_risk,
+      recovery_chance: analysisData.recovery_chance,
+      bounding_boxes: analysisData.bounding_boxes,
+      model_version: analysisData.model_version
+    };
+  };
+
   const handleAnalysis = async () => {
     if (!base64Image) {
       toast({
@@ -43,32 +72,14 @@ export const useDiseasePrediction = () => {
     }
 
     setLoading(true);
+    setPreviousAnalysisData(null);
+    setIsAdvancedAnalysis(false);
+    
     try {
       const analysisData: AnalysisData = await analyzePlantDisease(base64Image);
+      setPreviousAnalysisData(analysisData);
       
-      const mappedResult: DetectionResult = {
-        disease_name: analysisData.disease_name || "Unknown",
-        confidence: analysisData.confidence || 0,
-        disease_stage: "Unknown", // Default value as analysisData doesn't have this field
-        symptoms: [analysisData.description || "Unknown symptoms"],
-        action_plan: analysisData.recommendations || [],
-        treatments: {
-          organic: analysisData.treatment?.slice(0, 2) || [],
-          chemical: analysisData.treatment?.slice(2) || []
-        },
-        faqs: [
-          {
-            question: "What is this disease?",
-            answer: analysisData.description || "Unknown disease"
-          }
-        ],
-        tips: analysisData.recommendations || [],
-        yield_impact: analysisData.yield_impact,
-        spread_risk: analysisData.spread_risk,
-        recovery_chance: analysisData.recovery_chance,
-        bounding_boxes: analysisData.bounding_boxes
-      };
-
+      const mappedResult = mapToDetectionResult(analysisData);
       setDetectionResult(mappedResult);
 
       const analysisId = await storeAnalysisData(analysisData, "plant_disease");
@@ -99,11 +110,73 @@ export const useDiseasePrediction = () => {
     }
   };
 
+  // Handle feedback when user is unsatisfied with the result
+  const handleRequestBetterAnalysis = async () => {
+    if (!base64Image) {
+      toast({
+        title: "No Image Available",
+        description: "Cannot improve analysis without an image.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    setIsAdvancedAnalysis(true);
+    
+    toast({
+      title: "Using Advanced Model",
+      description: "Analyzing with Gemini 2.5 Flash Preview for better accuracy...",
+    });
+
+    try {
+      const enhancedAnalysis: AnalysisData = await analyzeWithAdvancedModel(
+        base64Image, 
+        previousAnalysisData
+      );
+      
+      // Store the previous analysis data
+      setPreviousAnalysisData(enhancedAnalysis);
+      
+      const mappedResult = mapToDetectionResult(enhancedAnalysis);
+      setDetectionResult(mappedResult);
+
+      const analysisId = await storeAnalysisData(enhancedAnalysis, "plant_disease_enhanced");
+
+      await saveFarmSnapshot({
+        user_id: "anonymous",
+        type: "plant_disease_enhanced",
+        timestamp: new Date().toISOString(),
+        data: {
+          ...enhancedAnalysis,
+          analysisId,
+          isAdvancedAnalysis: true
+        }
+      });
+
+      toast({
+        title: "Enhanced Analysis Complete",
+        description: `Gemini 2.5 Flash detected: ${mappedResult.disease_name} (${mappedResult.confidence}% confidence)`,
+      });
+    } catch (error) {
+      console.error("Advanced detection error:", error);
+      toast({
+        title: "Advanced Analysis Failed",
+        description: "There was an error with the enhanced analysis. Using previous results.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     selectedImage,
     detectionResult,
     loading,
+    isAdvancedAnalysis,
     handleImageChange,
-    handleAnalysis
+    handleAnalysis,
+    handleRequestBetterAnalysis
   };
 };

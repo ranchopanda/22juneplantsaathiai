@@ -1,11 +1,10 @@
-
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { API_KEYS, SAFETY_SETTINGS } from "../config/geminiConfig";
 
-export const createGeminiModel = (apiKey: string) => {
+export const createGeminiModel = (apiKey: string, modelName: string = "gemini-1.5-pro") => {
   const genAI = new GoogleGenerativeAI(apiKey);
   return genAI.getGenerativeModel({ 
-    model: "gemini-1.5-pro",
+    model: modelName,
     safetySettings: SAFETY_SETTINGS,
     generationConfig: {
       temperature: 0.4,

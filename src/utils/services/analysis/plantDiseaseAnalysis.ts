@@ -1,4 +1,3 @@
-
 import { createGeminiModel, tryWithApiKeys } from "../helpers/geminiModelHelper";
 import { AnalysisData } from '../../types/analysisTypes';
 
@@ -26,6 +25,7 @@ const FALLBACK_RESULT: AnalysisData = {
   recovery_chance: "Medium"
 };
 
+// Standard analysis with regular Gemini model
 export const analyzePlantDisease = async (base64Image: string): Promise<AnalysisData> => {
   if (!base64Image) {
     throw new Error("No image provided");
@@ -109,4 +109,118 @@ If you're uncertain, provide your best estimate but indicate a lower confidence 
       return FALLBACK_RESULT;
     }
   }, FALLBACK_RESULT);
+};
+
+// Enhanced analysis with Gemini 2.5 Flash Preview model for better accuracy
+export const analyzeWithAdvancedModel = async (base64Image: string, previousResult: AnalysisData | null = null): Promise<AnalysisData> => {
+  if (!base64Image) {
+    throw new Error("No image provided");
+  }
+
+  return tryWithApiKeys(async (apiKey) => {
+    // Create a model with Gemini 2.5 Flash Preview
+    const model = createGeminiModel(apiKey, "gemini-1.5-flash-preview-0417");
+    
+    let prompt = `
+You are PlantDoctorAI Premium, an advanced agricultural system using the latest Gemini 2.5 Flash Preview model for high-accuracy plant disease detection.
+
+Analyze this plant image with exceptional detail and provide a comprehensive disease assessment in JSON format.`;
+
+    // If we have previous results, include them for comparison and improvement
+    if (previousResult) {
+      prompt += `
+      
+A previous analysis determined this might be "${previousResult.disease_name}" with ${previousResult.confidence}% confidence.
+Please verify this assessment with your advanced capabilities and correct any inaccuracies.
+IMPORTANT: If the previous analysis was incorrect, provide a completely new and accurate assessment.`;
+    }
+
+    prompt += `
+
+Carefully examine:
+1. Plant type and species identification
+2. Visual symptoms (spots, discoloration, wilt, etc.)
+3. Disease patterns and progression
+4. Affected plant parts
+5. Severity and spread potential
+
+Provide your enhanced analysis in this exact JSON format:
+{
+  "disease_name": "Full scientific name of the disease",
+  "common_name": "Common name of the disease",
+  "confidence": number between 0-100,
+  "description": "Detailed description of symptoms and disease characteristics",
+  "treatment": [
+    "5+ detailed treatment options in order of effectiveness, with specific products/methods"
+  ],
+  "recommendations": [
+    "6-8 specific preventive measures and best practices with implementation details"
+  ],
+  "severity": "Mild/Moderate/Severe",
+  "crop_type": "Scientific name of the plant species",
+  "yield_impact": "Detailed assessment of impact on crop yield with percentages",
+  "spread_risk": "Low/Medium/High risk of disease spreading with explanation",
+  "recovery_chance": "Low/Medium/High chance of plant recovery with timeline",
+  "organic_solutions": [
+    "List of organic treatment options"
+  ],
+  "chemical_solutions": [
+    "List of chemical treatment options with proper dosages"
+  ],
+  "diagnosis_confidence": "Explanation of how confident you are in this diagnosis and why"
+}
+
+Provide the most accurate, detailed, and actionable information possible based on the visual evidence.
+Your analysis will be used by farmers to make critical decisions about their crops.`;
+
+    const result = await model.generateContent([
+      prompt,
+      { inlineData: { data: base64Image, mimeType: "image/jpeg" } },
+    ]);
+    
+    const response = await result.response;
+    const text = response.text();
+    
+    let jsonStr = text;
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+      jsonStr = jsonMatch[1].trim();
+    } else {
+      // Try simple JSON extraction if no code blocks found
+      const simpleMatch = text.match(/\{[\s\S]*\}/);
+      if (simpleMatch) {
+        jsonStr = simpleMatch[0];
+      }
+    }
+    
+    try {
+      const parsedData = JSON.parse(jsonStr);
+      
+      // Validate the data structure and provide defaults for missing fields
+      const validatedResult: AnalysisData = {
+        ...FALLBACK_RESULT,
+        disease_name: parsedData.disease_name || FALLBACK_RESULT.disease_name,
+        confidence: typeof parsedData.confidence === 'number' ? parsedData.confidence : FALLBACK_RESULT.confidence,
+        description: parsedData.description || FALLBACK_RESULT.description,
+        treatment: Array.isArray(parsedData.treatment) ? parsedData.treatment : 
+                  (Array.isArray(parsedData.organic_solutions) ? 
+                    [...parsedData.organic_solutions, ...(Array.isArray(parsedData.chemical_solutions) ? parsedData.chemical_solutions : [])] 
+                    : FALLBACK_RESULT.treatment),
+        recommendations: Array.isArray(parsedData.recommendations) ? parsedData.recommendations : FALLBACK_RESULT.recommendations,
+        severity: ['Mild', 'Moderate', 'Severe'].includes(parsedData.severity) ? parsedData.severity : FALLBACK_RESULT.severity,
+        crop_type: parsedData.crop_type || FALLBACK_RESULT.crop_type,
+        yield_impact: parsedData.yield_impact || FALLBACK_RESULT.yield_impact,
+        spread_risk: ['Low', 'Medium', 'High'].includes(parsedData.spread_risk) ? parsedData.spread_risk : FALLBACK_RESULT.spread_risk,
+        recovery_chance: ['Low', 'Medium', 'High'].includes(parsedData.recovery_chance) ? parsedData.recovery_chance : FALLBACK_RESULT.recovery_chance,
+        additional_notes: parsedData.diagnosis_confidence || "",
+        model_version: "gemini-1.5-flash-preview-0417"
+      };
+      
+      return validatedResult;
+    } catch (error) {
+      console.error("Error parsing JSON response from advanced model:", error);
+      console.log("Raw response text:", text);
+      return previousResult || FALLBACK_RESULT;
+    }
+  }, previousResult || FALLBACK_RESULT);
 };

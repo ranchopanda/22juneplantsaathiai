@@ -56,4 +56,7 @@ export interface DetectionResult {
     title: string;
     url: string;
   }>;
+  
+  // AI model information
+  model_version?: string;
 }
