@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -12,7 +11,7 @@ const crops = [
   {
     id: "rice",
     name: "Rice (धान)",
-    image: "https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1400&q=80",
+    image: "https://source.unsplash.com/random/600x400/?rice,paddy",
     description: "Rice is a staple food crop in India, particularly important in eastern and southern regions. It's grown in the kharif season and requires abundant water.",
     varieties: ["Basmati", "IR-36", "Pusa Basmati", "Sona Masuri", "Gobindobhog"],
     seasons: ["Kharif (June-July)", "Rabi (Nov-Dec in some regions)"],
@@ -39,7 +38,7 @@ const crops = [
   {
     id: "wheat",
     name: "Wheat (गेहूं)",
-    image: "https://images.unsplash.com/photo-1574323347407-f5e1c5a1ec75?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1400&q=80",
+    image: "https://source.unsplash.com/random/600x400/?wheat,farm",
     description: "Wheat is a major rabi crop in India and the second most important cereal crop after rice. It's primarily grown in the northern states during winter months.",
     varieties: ["HD-2967", "PBW-550", "DBW-17", "WH-542", "Lokwan"],
     seasons: ["Rabi (October-November sowing)"],
@@ -67,7 +66,7 @@ const crops = [
   {
     id: "cotton",
     name: "Cotton (कपास)",
-    image: "https://images.unsplash.com/photo-1591488320356-76721f70acbb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1400&q=80",
+    image: "https://source.unsplash.com/random/600x400/?cotton,field",
     description: "Cotton is an important cash crop in India, which is one of the largest producers globally. It provides raw material for the textile industry and supports millions of farmers.",
     varieties: ["Bt Cotton hybrids", "DCH-32", "MCU-5", "LRA-5166", "Desi Cotton varieties"],
     seasons: ["Kharif (May-June sowing)"],
@@ -95,7 +94,7 @@ const crops = [
   {
     id: "sugarcane",
     name: "Sugarcane (गन्ना)",
-    image: "https://images.unsplash.com/photo-1601493700952-68fece2257df?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1400&q=80",
+    image: "https://source.unsplash.com/random/600x400/?sugarcane",
     description: "Sugarcane is a major cash crop in India, which is the second-largest producer globally. It is the primary source of sugar and is also used for jaggery, molasses, and biofuel production.",
     varieties: ["Co 86032", "Co 0238", "Co 0118", "CoJ 64", "CoVC 99463"],
     seasons: ["Spring (Feb-March)", "Autumn (Sept-Oct)", "Adsali (July-Aug)"],
@@ -124,7 +123,7 @@ const crops = [
   {
     id: "potato",
     name: "Potato (आलू)",
-    image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1400&q=80",
+    image: "https://source.unsplash.com/random/600x400/?potato,crop",
     description: "Potato is an important vegetable crop in India, cultivated primarily in the winter season. It's a staple food and a source of income for many small and marginal farmers.",
     varieties: ["Kufri Jyoti", "Kufri Pukhraj", "Kufri Chipsona", "Kufri Bahar", "Kufri Sindhuri"],
     seasons: ["Rabi (Oct-Nov sowing in plains)", "Spring (Jan-Feb in hills)"],
@@ -153,7 +152,7 @@ const crops = [
   {
     id: "tomato",
     name: "Tomato (टमाटर)",
-    image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1400&q=80",
+    image: "https://source.unsplash.com/random/600x400/?tomato,plant",
     description: "Tomato is one of the most important vegetable crops in India, grown year-round in different regions. It's a high-value crop that serves as a major source of vitamins and minerals.",
     varieties: ["Pusa Ruby", "Arka Vikas", "Arka Rakshak", "Pusa Hybrid-1", "NS-585"],
     seasons: ["Year-round (Different regions and seasons)", "Winter crop in plains", "Summer crop in hills"],
