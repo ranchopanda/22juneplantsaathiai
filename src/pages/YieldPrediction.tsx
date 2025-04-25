@@ -51,7 +51,7 @@ const YieldPrediction = () => {
         soilType,
         rainfall,
         temperature,
-        disease || null
+        disease === "none" ? null : disease
       );
 
       setPrediction(result);
@@ -80,7 +80,7 @@ const YieldPrediction = () => {
           soilType,
           rainfall,
           temperature,
-          disease: disease || "none",
+          disease: disease === "none" ? "none" : disease,
           result
         }
       });
@@ -123,7 +123,7 @@ const YieldPrediction = () => {
   ];
 
   const diseaseOptions = [
-    { value: "", label: "No Disease" },
+    { value: "none", label: "No Disease" },
     { value: "Blast", label: "Blast" },
     { value: "Leaf Blight", label: "Leaf Blight" },
     { value: "Rust", label: "Rust" },
