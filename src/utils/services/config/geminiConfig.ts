@@ -1,13 +1,13 @@
-
 import { HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 export const API_KEYS = [
-  "AIzaSyAnxLXZytFZA-gUYL4Nu8pfIvqcGwHetFU", // User provided API key
-  "AIzaSyDp5YvjBvD-iqK5zKzNAi71uWWD6isHrVc", // User provided API key
+  import.meta.env.VITE_GEMINI_API_KEY_PRIMARY as string,
+  "AIzaSyAnxLXZytFZA-gUYL4Nu8pfIvqcGwHetFU",
+  "AIzaSyDp5YvjBvD-iqK5zKzNAi71uWWD6isHrVc",
 ];
 
 export const MODEL_CONFIG = {
-  model: "gemini-1.5-flash", // Or the appropriate model name
+  model: "gemini-2.0-flash", // Updated to gemini-2.0-flash for higher quotas
 };
 
 export const SAFETY_SETTINGS = [

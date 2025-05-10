@@ -8,6 +8,8 @@ export interface DetectionResult {
   treatments: {
     organic: string[];
     chemical: string[];
+    ipm: string[];
+    cultural: string[];
   };
   faqs: Array<{
     question: string;
@@ -19,10 +21,13 @@ export interface DetectionResult {
   crop_stage_advice?: string;
   bounding_boxes?: {x: number, y: number, width: number, height: number}[];
   
-  // New fields from enhanced prompt
+  // Fields from enhanced analysis
   yield_impact?: string;
   spread_risk?: string;
   recovery_chance?: string;
+  resistant_varieties_note?: string;
+  
+  // Legacy fields
   next_steps?: string[];
   prevention_tips?: string[];
   environment_conditions?: {
