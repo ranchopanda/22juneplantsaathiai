@@ -24,7 +24,7 @@ export const detectPlantDisease = async (
 
   try {
     // Use Gemini AI for detection
-    const result = await analyzePlantDisease(base64Image, context);
+    const result = await analyzePlantDisease(base64Image);
     return result;
   } catch (error) {
     console.error("Error in plant disease detection:", error);

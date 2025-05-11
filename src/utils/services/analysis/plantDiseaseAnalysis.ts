@@ -111,18 +111,18 @@ If you're uncertain, provide your best estimate but indicate a lower confidence 
   }, FALLBACK_RESULT);
 };
 
-// Enhanced analysis with Gemini 2.5 Flash Preview model for better accuracy
+// Enhanced analysis with Gemini 2.0 Flash model for better accuracy
 export const analyzeWithAdvancedModel = async (base64Image: string, previousResult: AnalysisData | null = null): Promise<AnalysisData> => {
   if (!base64Image) {
     throw new Error("No image provided");
   }
 
   return tryWithApiKeys(async (apiKey) => {
-    // Create a model with Gemini 2.5 Flash Preview
-    const model = createGeminiModel(apiKey, "gemini-1.5-flash-preview-0417");
+    // Create a model with Gemini 2.0 Flash
+    const model = createGeminiModel(apiKey, "gemini-2.0-flash");
     
     let prompt = `
-You are PlantDoctorAI Premium, an advanced agricultural system using the latest Gemini 2.5 Flash Preview model for high-accuracy plant disease detection.
+You are PlantDoctorAI Premium, an advanced agricultural system using the latest Gemini model for high-accuracy plant disease detection.
 
 Analyze this plant image with exceptional detail and provide a comprehensive disease assessment in JSON format.`;
 
@@ -213,7 +213,7 @@ Your analysis will be used by farmers to make critical decisions about their cro
         spread_risk: ['Low', 'Medium', 'High'].includes(parsedData.spread_risk) ? parsedData.spread_risk : FALLBACK_RESULT.spread_risk,
         recovery_chance: ['Low', 'Medium', 'High'].includes(parsedData.recovery_chance) ? parsedData.recovery_chance : FALLBACK_RESULT.recovery_chance,
         additional_notes: parsedData.diagnosis_confidence || "",
-        model_version: "gemini-1.5-flash-preview-0417"
+        model_version: "gemini-2.0-flash"
       };
       
       return validatedResult;

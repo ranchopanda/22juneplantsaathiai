@@ -1,4 +1,3 @@
-
 import { HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 export const API_KEYS = [
@@ -7,7 +6,7 @@ export const API_KEYS = [
 ];
 
 export const MODEL_CONFIG = {
-  model: "gemini-1.5-flash", // Or the appropriate model name
+  model: "gemini-2.0-flash", // Using the newer model version
 };
 
 export const SAFETY_SETTINGS = [

@@ -1,52 +1,91 @@
-
-import { useState } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import FeaturesSection from "@/components/FeaturesSection";
-import TestimonialsSection from "@/components/TestimonialsSection";
 import StatisticsSection from "@/components/StatisticsSection";
 import CallToAction from "@/components/CallToAction";
 import CustomFooter from "@/components/CustomFooter";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Leaf, Map, CloudRain, BarChart3, Thermometer, Camera, LayoutGrid, Wheat, Sprout } from "lucide-react";
+import { Leaf, Map, CloudRain, BarChart3, Camera, LayoutGrid, Wheat, Sprout, Volume2, MessageSquare } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import GeminiChatbot from "@/components/GeminiChatbot";
 
+// Language context would be ideal, but for now we'll use the local state
 const Index = () => {
   const [darkMode, setDarkMode] = useState(false);
+  const [language, setLanguage] = useState<string>("English");
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Simulate loading
+  useEffect(() => {
+    setTimeout(() => {
+      setIsLoading(false);
+      toast({
+        title: "Data loaded",
+        description: "Welcome to Kisan Krishi Dost!",
+        variant: "success",
+      });
+    }, 1500);
+  }, [toast]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
 
+  const playInstructions = (instructions: string[]) => {
+    // This would use the Web Speech API in a real implementation
+    toast({
+      title: "Voice Instructions",
+      description: "Playing audio instructions in Hindi",
+    });
+  };
+
+  const toggleChatbot = () => {
+    setIsChatbotOpen(!isChatbotOpen);
+    if (!isChatbotOpen) {
+      toast({
+        title: language === "हिंदी" ? "कृषि सहायक" : "Farming Assistant",
+        description: language === "हिंदी" ? "आपका सहायक अब उपलब्ध है" : "Your assistant is now available",
+      });
+    }
+  };
+
   const featuredCrops = [
     {
       name: "Rice",
+      hindiName: "चावल",
       description: "India's staple food crop, grown mainly in the monsoon season.",
       icon: <Sprout className="h-10 w-10 text-kisan-green dark:text-kisan-gold" />,
-      image: "https://source.unsplash.com/random/300x200/?rice,paddy",
+      image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=300&auto=format",
       action: () => navigate("/crop-info")
     },
     {
       name: "Wheat",
+      hindiName: "गेहूं",
       description: "A major rabi crop grown during winter months across northern India.",
       icon: <Wheat className="h-10 w-10 text-kisan-green dark:text-kisan-gold" />,
-      image: "https://source.unsplash.com/random/300x200/?wheat",
+      image: "https://images.unsplash.com/photo-1631124230593-60188ac0ba3e?q=80&w=300&auto=format",
       action: () => navigate("/crop-info")
     },
     {
       name: "Cotton",
+      hindiName: "कपास",
       description: "India is one of the world's largest producers of cotton.",
       icon: <Sprout className="h-10 w-10 text-kisan-green dark:text-kisan-gold" />,
-      image: "https://source.unsplash.com/random/300x200/?cotton,field",
+      image: "https://images.unsplash.com/photo-1516378513368-228422f9b6a0?q=80&w=300&auto=format",
       action: () => navigate("/crop-info")
     },
     {
       name: "Sugarcane",
+      hindiName: "गन्ना",
       description: "Perennial crop that's vital for sugar production and byproducts.",
       icon: <Leaf className="h-10 w-10 text-kisan-green dark:text-kisan-gold" />,
-      image: "https://source.unsplash.com/random/300x200/?sugarcane",
+      image: "https://images.unsplash.com/photo-1548368695-a468aea16bfd?q=80&w=300&auto=format",
       action: () => navigate("/crop-info")
     }
   ];
@@ -54,51 +93,149 @@ const Index = () => {
   const aiTools = [
     {
       title: "Plant Disease Detection",
+      hindiTitle: "फसल रोग पहचानें",
       description: "Upload images of your crops to identify diseases and get treatment recommendations.",
       icon: <Camera className="h-12 w-12 p-2 bg-green-100 text-green-600 rounded-lg" />,
       color: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
-      action: () => navigate("/disease-detection")
+      action: () => {
+        toast({
+          title: language === "हिंदी" ? "नेविगेट हो रहा है..." : "Navigating...",
+          description: language === "हिंदी" ? "रोग पहचान पेज पर जा रहे हैं" : "Going to disease detection page",
+        });
+        navigate("/disease-detection");
+      },
+      instructions: [
+        "Take a photo of crop leaves",
+        "Get disease details and treatment",
+        "Learn prevention measures"
+      ],
+      hindiInstructions: [
+        "फसल के पत्ते की फोटो लें",
+        "रोग का विवरण और उपचार पाएं",
+        "रोकथाम के उपाय जानें"
+      ]
     },
     {
-      title: "Weather Forecasting",
+      title: "Weather Forecast",
+      hindiTitle: "आज का मौसम",
       description: "Get accurate weather predictions for your specific location to plan farming activities.",
       icon: <CloudRain className="h-12 w-12 p-2 bg-blue-100 text-blue-600 rounded-lg" />,
       color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-      action: () => navigate("/weather")
+      action: () => {
+        toast({
+          title: language === "हिंदी" ? "मौसम डेटा लोड हो रहा है..." : "Loading weather data...",
+          description: language === "हिंदी" ? "उत्तर प्रदेश के लिए मौसम की जानकारी" : "Weather information for UP",
+        });
+        navigate("/weather");
+      },
+      instructions: [
+        "Check weather for your location",
+        "View rainfall and temperature forecast",
+        "Get advice for farming activities"
+      ],
+      hindiInstructions: [
+        "स्थान के अनुसार मौसम जानें",
+        "वर्षा और तापमान का पूर्वानुमान",
+        "खेती गतिविधियों के लिए सलाह"
+      ]
     },
     {
       title: "Soil Analysis",
+      hindiTitle: "मिट्टी जांच",
       description: "Analyze soil composition using AI to determine optimal crops and fertilizers.",
       icon: <Map className="h-12 w-12 p-2 bg-amber-100 text-amber-600 rounded-lg" />,
       color: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
-      action: () => navigate("/soil-analysis")
+      action: () => {
+        toast({
+          title: language === "हिंदी" ? "मिट्टी विश्लेषण" : "Soil Analysis",
+          description: language === "हिंदी" ? "मिट्टी की जांच के लिए तैयार" : "Ready for soil testing",
+        });
+        navigate("/soil-analysis");
+      },
+      instructions: [
+        "Upload a photo of your soil",
+        "Get nutrient analysis",
+        "Receive fertilizer recommendations"
+      ],
+      hindiInstructions: [
+        "मिट्टी की फोटो अपलोड करें",
+        "पोषक तत्वों का विश्लेषण पाएं",
+        "उपयुक्त उर्वरक सलाह"
+      ]
     },
     {
       title: "Yield Prediction",
+      hindiTitle: "उपज अनुमान",
       description: "Predict crop yields based on weather, soil, and farming practices data.",
       icon: <BarChart3 className="h-12 w-12 p-2 bg-purple-100 text-purple-600 rounded-lg" />,
       color: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
-      action: () => navigate("/yield-prediction")
+      action: () => {
+        toast({
+          title: language === "हिंदी" ? "उपज अनुमान तैयार हो रहा है" : "Preparing yield prediction",
+          description: language === "हिंदी" ? "अपनी फसल का चयन करें" : "Select your crop",
+        });
+        navigate("/yield-prediction");
+      },
+      instructions: [
+        "Select crop, soil and location",
+        "Get potential yield information",
+        "View income estimates"
+      ],
+      hindiInstructions: [
+        "फसल, मिट्टी और स्थान का चयन करें",
+        "संभावित उपज की जानकारी",
+        "आय का अनुमान देखें"
+      ]
     },
     {
       title: "Crop Information",
+      hindiTitle: "फसल की जानकारी",
       description: "Access detailed information about various crops, growing methods, and market trends.",
       icon: <LayoutGrid className="h-12 w-12 p-2 bg-indigo-100 text-indigo-600 rounded-lg" />,
       color: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
-      action: () => navigate("/crop-info")
-    },
-    {
-      title: "Temperature Monitoring",
-      description: "Monitor temperature trends and get alerts for extreme conditions affecting crops.",
-      icon: <Thermometer className="h-12 w-12 p-2 bg-red-100 text-red-600 rounded-lg" />,
-      color: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-      action: () => navigate("/weather")
+      action: () => {
+        toast({
+          title: language === "हिंदी" ? "फसल जानकारी" : "Crop Information",
+          description: language === "हिंदी" ? "फसलों के बारे में जानकारी" : "Information about crops",
+        });
+        navigate("/crop-info");
+      },
+      instructions: [
+        "Browse details for various crops",
+        "Learn suitable farming methods",
+        "Check crop market prices"
+      ],
+      hindiInstructions: [
+        "विभिन्न फसलों का विवरण देखें",
+        "उपयुक्त खेती विधियां जानें",
+        "फसल बाजार मूल्य की जानकारी"
+      ]
     }
   ];
 
+  const renderSkeletons = () => {
+    return Array(5).fill(0).map((_, index) => (
+      <div key={index} className="skeleton-card">
+        <div className="skeleton-image" />
+        <div className="skeleton-content">
+          <div className="skeleton-title" />
+          <div className="skeleton-text w-full" />
+          <div className="skeleton-text w-3/4" />
+          <div className="skeleton-text-sm w-1/2" />
+          <div className="skeleton-button" />
+        </div>
+      </div>
+    ));
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+      <Header 
+        darkMode={darkMode} 
+        toggleDarkMode={toggleDarkMode} 
+        language={language}
+        setLanguage={setLanguage}
+      />
       
       <HeroSection />
       
@@ -106,41 +243,60 @@ const Index = () => {
         <div className="container mx-auto px-4 py-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-kisan-green dark:text-kisan-gold mb-3">
-              AI-Powered Agriculture Tools
+              {language === "हिंदी" ? "AI-आधारित कृषि टूल्स" : "AI-Powered Agriculture Tools"}
             </h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Our cutting-edge AI technology helps farmers make data-driven decisions, 
-              increase productivity, and achieve sustainable agriculture practices.
+              {language === "हिंदी" 
+                ? "हमारी अत्याधुनिक AI तकनीक किसानों को डेटा-संचालित निर्णय लेने, उत्पादकता बढ़ाने और टिकाऊ कृषि अभ्यासों को प्राप्त करने में मदद करती है।" 
+                : "Our cutting-edge AI technology helps farmers make data-driven decisions, increase productivity, and achieve sustainable agriculture practices."}
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {aiTools.map((tool, index) => (
-              <Card 
-                key={index} 
-                className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-shadow duration-300"
-              >
-                <CardHeader className="p-6">
-                  <div className={`rounded-lg inline-block mb-3 ${tool.color}`}>
-                    {tool.icon}
-                  </div>
-                  <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-200">
-                    {tool.title}
-                  </CardTitle>
-                  <CardDescription className="text-gray-600 dark:text-gray-400">
-                    {tool.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardFooter className="pt-0 pb-6 px-6">
-                  <Button 
-                    onClick={tool.action}
-                    className="w-full bg-kisan-green hover:bg-kisan-green-dark text-white dark:bg-kisan-green-dark dark:hover:bg-kisan-green"
-                  >
-                    Try Now
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+            {isLoading ? (
+              renderSkeletons()
+            ) : (
+              aiTools.map((tool, index) => (
+                <Card 
+                  key={index} 
+                  className="overflow-hidden border-none shadow-xl hover:shadow-2xl transition-shadow duration-300 rounded-xl"
+                >
+                  <CardHeader className="p-6">
+                    <div className={`rounded-lg inline-block mb-3 ${tool.color}`}>
+                      {tool.icon}
+                    </div>
+                    <CardTitle className="text-2xl font-bold text-gray-800 dark:text-gray-200 flex items-center justify-between">
+                      {language === "हिंदी" ? tool.hindiTitle : tool.title}
+                      <button 
+                        onClick={() => playInstructions(language === "हिंदी" ? tool.hindiInstructions : tool.instructions)}
+                        className="p-2 bg-kisan-green/10 rounded-full hover:bg-kisan-green/20 transition-colors"
+                        aria-label="Play voice instructions"
+                      >
+                        <Volume2 className="h-5 w-5 text-kisan-green dark:text-kisan-gold" />
+                      </button>
+                    </CardTitle>
+                    <CardDescription className="text-gray-600 dark:text-gray-400">
+                      {tool.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="px-6 pb-2">
+                    <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      {(language === "हिंदी" ? tool.hindiInstructions : tool.instructions).map((instruction, i) => (
+                        <li key={i}>{instruction}</li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                  <CardFooter className="pt-0 pb-6 px-6">
+                    <Button 
+                      onClick={tool.action}
+                      className="w-full h-12 text-base bg-kisan-green hover:bg-kisan-green-dark text-white dark:bg-kisan-green-dark dark:hover:bg-kisan-green transition-colors duration-300"
+                    >
+                      {language === "हिंदी" ? "इस्तेमाल करें" : "Try Now"}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))
+            )}
           </div>
         </div>
         
@@ -148,51 +304,56 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-kisan-green dark:text-kisan-gold mb-3">
-                Featured Crops
+                {language === "हिंदी" ? "प्रमुख फसलें" : "Featured Crops"}
               </h2>
               <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Browse information about India's major crops, including growing methods, 
-                disease prevention, and market insights.
+                {language === "हिंदी" 
+                  ? "भारत की प्रमुख फसलों के बारे में जानकारी, जिसमें खेती के तरीके, रोग निवारण और बाजार अंतर्दृष्टि शामिल हैं।"
+                  : "Browse information about India's major crops, including growing methods, disease prevention, and market insights."}
               </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredCrops.map((crop, index) => (
-                <Card 
-                  key={index} 
-                  className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-shadow duration-300"
-                >
-                  <div className="h-40 overflow-hidden">
-                    <img 
-                      src={crop.image} 
-                      alt={crop.name} 
-                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 
-                    />
-                  </div>
-                  <CardHeader className="p-4">
-                    <div className="flex items-center space-x-3">
-                      {crop.icon}
-                      <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-200">
-                        {crop.name}
-                      </CardTitle>
+              {isLoading ? (
+                renderSkeletons()
+              ) : (
+                featuredCrops.map((crop, index) => (
+                  <Card 
+                    key={index} 
+                    className="overflow-hidden border-none shadow-xl hover:shadow-2xl transition-shadow duration-300 rounded-xl"
+                  >
+                    <div className="h-40 overflow-hidden">
+                      <img 
+                        src={crop.image} 
+                        alt={language === "हिंदी" ? crop.hindiName : crop.name} 
+                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 
+                      />
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      {crop.description}
-                    </p>
-                  </CardContent>
-                  <CardFooter className="p-4">
-                    <Button 
-                      variant="outline" 
-                      onClick={crop.action}
-                      className="w-full border-kisan-green text-kisan-green hover:bg-kisan-green hover:text-white dark:border-kisan-gold dark:text-kisan-gold dark:hover:bg-kisan-gold/20"
-                    >
-                      Learn More
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
+                    <CardHeader className="p-4">
+                      <div className="flex items-center space-x-3">
+                        {crop.icon}
+                        <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-200">
+                          {language === "हिंदी" ? crop.hindiName : crop.name}
+                        </CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <p className="text-gray-600 dark:text-gray-400 text-sm">
+                        {crop.description}
+                      </p>
+                    </CardContent>
+                    <CardFooter className="p-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={crop.action}
+                        className="w-full border-kisan-green text-kisan-green hover:bg-kisan-green hover:text-white dark:border-kisan-gold dark:text-kisan-gold dark:hover:bg-kisan-gold/20"
+                      >
+                        {language === "हिंदी" ? "और जानें" : "Learn More"}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))
+              )}
             </div>
             
             <div className="text-center mt-10">
@@ -201,17 +362,60 @@ const Index = () => {
                 variant="outline"
                 className="border-kisan-green text-kisan-green hover:bg-kisan-green hover:text-white dark:border-kisan-gold dark:text-kisan-gold dark:hover:bg-kisan-gold/20"
               >
-                View All Crops
+                {language === "हिंदी" ? "सभी फसलें देखें" : "View All Crops"}
               </Button>
             </div>
           </div>
         </div>
         
         <FeaturesSection />
-        <TestimonialsSection />
         <StatisticsSection />
         <CallToAction />
       </main>
+      
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg md:hidden z-40">
+        <div className="flex justify-around items-center p-3">
+          <button onClick={() => navigate("/disease-detection")} className="flex flex-col items-center">
+            <Camera className="h-6 w-6 text-kisan-green dark:text-kisan-gold" />
+            <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
+              {language === "हिंदी" ? "रोग पहचानें" : "Diseases"}
+            </span>
+          </button>
+          <button onClick={() => navigate("/weather")} className="flex flex-col items-center">
+            <CloudRain className="h-6 w-6 text-kisan-green dark:text-kisan-gold" />
+            <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
+              {language === "हिंदी" ? "मौसम" : "Weather"}
+            </span>
+          </button>
+          <button onClick={() => navigate("/soil-analysis")} className="flex flex-col items-center">
+            <Map className="h-6 w-6 text-kisan-green dark:text-kisan-gold" />
+            <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
+              {language === "हिंदी" ? "मिट्टी जांच" : "Soil"}
+            </span>
+          </button>
+          <button onClick={() => navigate("/crop-info")} className="flex flex-col items-center">
+            <Wheat className="h-6 w-6 text-kisan-green dark:text-kisan-gold" />
+            <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
+              {language === "हिंदी" ? "फसल जानकारी" : "Crops"}
+            </span>
+          </button>
+        </div>
+      </div>
+      
+      {/* Chatbot Button */}
+      <button 
+        onClick={toggleChatbot} 
+        className="fixed bottom-20 right-4 md:bottom-4 md:right-4 p-3 rounded-full bg-kisan-green text-white shadow-lg z-50 hover:bg-kisan-green-dark transition-colors"
+        aria-label="Open chatbot"
+      >
+        <MessageSquare className="h-6 w-6" />
+      </button>
+      
+      <GeminiChatbot 
+        language={language} 
+        isOpen={isChatbotOpen} 
+        onClose={() => setIsChatbotOpen(false)} 
+      />
       
       <CustomFooter />
     </div>

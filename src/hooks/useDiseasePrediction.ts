@@ -126,7 +126,7 @@ export const useDiseasePrediction = () => {
     
     toast({
       title: "Using Advanced Model",
-      description: "Analyzing with Gemini 2.5 Flash Preview for better accuracy...",
+      description: "Analyzing with Gemini 2.0 Flash for better accuracy...",
     });
 
     try {
@@ -156,7 +156,7 @@ export const useDiseasePrediction = () => {
 
       toast({
         title: "Enhanced Analysis Complete",
-        description: `Gemini 2.5 Flash detected: ${mappedResult.disease_name} (${mappedResult.confidence}% confidence)`,
+        description: `Gemini 2.0 Flash detected: ${mappedResult.disease_name} (${mappedResult.confidence}% confidence)`,
       });
     } catch (error) {
       console.error("Advanced detection error:", error);

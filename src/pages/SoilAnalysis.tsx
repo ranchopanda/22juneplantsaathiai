@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   ArrowLeft, Upload, Loader2, Info, 
   Camera, X, ArrowRight, AlertTriangle,
-  Sprout, Leaf
+  Sprout, Leaf, MapPin, ThermometerSun
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +20,9 @@ import {
 } from "@/utils/geminiAI";
 import { SoilAnalysisResult } from "@/utils/services/analysis/soilAnalysis";
 import { saveFarmSnapshot, getFarmSnapshots, FarmDataSnapshot } from "@/utils/farmDataSnapshots";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 
 function isSoilAnalysisResult(data: unknown): data is SoilAnalysisResult {
   return (
@@ -43,9 +46,28 @@ const SoilAnalysis = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [snapshots, setSnapshots] = useState<FarmDataSnapshot[]>([]);
   const [loadingSnapshots, setLoadingSnapshots] = useState(false);
+  const [locationInput, setLocationInput] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<string>("organic");
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Load snapshots when component mounts
+    const loadSnapshots = async () => {
+      setLoadingSnapshots(true);
+      try {
+        const history = await getFarmSnapshots("soil_analysis");
+        setSnapshots(history);
+      } catch (error) {
+        console.error("Error loading snapshots:", error);
+      } finally {
+        setLoadingSnapshots(false);
+      }
+    };
+    
+    loadSnapshots();
+  }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(prev => !prev);
@@ -99,11 +121,28 @@ const SoilAnalysis = () => {
     try {
       const base64Image = await imageToBase64(image);
       
-      const analysisResult = await analyzeSoil(base64Image);
+      // Pass location context if provided
+      const analysisResult = await analyzeSoil(
+        base64Image, 
+        locationInput || undefined
+      );
       
       setResult(analysisResult);
       
       await storeAnalysisData(analysisResult, "soil_analysis");
+      
+      // Show image quality feedback if available
+      if (analysisResult.image_quality_score !== undefined) {
+        const quality = analysisResult.image_quality_score;
+        
+        if (quality < 50) {
+          toast({
+            title: "Image Quality Warning",
+            description: "The image quality is low. For better results, try with better lighting and focus.",
+            variant: "destructive",
+          });
+        }
+      }
       
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -210,6 +249,28 @@ const SoilAnalysis = () => {
                           </p>
                         </div>
                         
+                        {/* Location input field */}
+                        <div className="mb-4">
+                          <Label htmlFor="location" className="mb-1 block">
+                            Location (Optional)
+                          </Label>
+                          <div className="flex">
+                            <div className="relative flex-grow">
+                              <MapPin className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                              <Input
+                                id="location"
+                                placeholder="District, State or Region"
+                                className="pl-8"
+                                value={locationInput}
+                                onChange={(e) => setLocationInput(e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Adding location helps provide region-specific recommendations
+                          </p>
+                        </div>
+                        
                         {!preview ? (
                           <div className="space-y-4">
                             <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-10 text-center">
@@ -293,6 +354,7 @@ const SoilAnalysis = () => {
                             <li>Take photos in good natural lighting</li>
                             <li>Include a clear view of soil texture and color</li>
                             <li>If possible, include a ruler or coin for scale</li>
+                            <li>Specify your location for region-specific advice</li>
                           </ul>
                         </div>
                       </div>
@@ -316,8 +378,35 @@ const SoilAnalysis = () => {
                             <h4 className="font-semibold text-kisan-green dark:text-kisan-gold">
                               {result.soil_type}
                             </h4>
-                            <p className="text-sm mt-1">pH Level: {result.ph_level}</p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <div className="text-sm px-2 py-1 bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 rounded-full flex items-center">
+                                <ThermometerSun className="h-3 w-3 mr-1" />
+                                pH: {result.ph_level}
+                              </div>
+                              {result.estimated_organic_matter && (
+                                <div className="text-sm px-2 py-1 bg-emerald-50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full">
+                                  Organic Matter: {result.estimated_organic_matter}
+                                </div>
+                              )}
+                              {result.location_context && (
+                                <div className="text-sm px-2 py-1 bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded-full flex items-center">
+                                  <MapPin className="h-3 w-3 mr-1" />
+                                  {result.location_context}
+                                </div>
+                              )}
+                            </div>
                           </div>
+                          
+                          {/* Image quality indicator if available */}
+                          {result.image_quality_score !== undefined && (
+                            <div className="mt-3">
+                              <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>Image Quality</span>
+                                <span>{result.image_quality_score}%</span>
+                              </div>
+                              <Progress value={result.image_quality_score} className="h-1.5" />
+                            </div>
+                          )}
                         </div>
                         
                         <div className="space-y-4">
@@ -340,17 +429,102 @@ const SoilAnalysis = () => {
                                       {nutrient.level}
                                     </span>
                                   </div>
+                                  
+                                  {/* Nutrient level visualization */}
+                                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 mb-2">
+                                    <div 
+                                      className={`h-1.5 rounded-full ${
+                                        nutrient.level === 'High' 
+                                          ? 'bg-green-500 dark:bg-green-400' 
+                                          : nutrient.level === 'Medium'
+                                          ? 'bg-amber-500 dark:bg-amber-400'
+                                          : 'bg-red-500 dark:bg-red-400'
+                                      }`}
+                                      style={{ 
+                                        width: `${nutrient.level === 'High' ? '90%' : nutrient.level === 'Medium' ? '50%' : '20%'}`
+                                      }}
+                                    />
+                                  </div>
+                                  
                                   <p className="text-sm text-gray-600 dark:text-gray-400">
                                     {nutrient.recommendation}
                                   </p>
+                                  
+                                  {/* Show confidence for each nutrient assessment */}
+                                  <div className="flex justify-end mt-1">
+                                    <span className="text-xs text-gray-500">
+                                      Confidence: {nutrient.confidence}%
+                                    </span>
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           </div>
                           
+                          {/* Treatment Tabs */}
                           <div>
                             <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                              Recommendations
+                              Treatment Options
+                            </h4>
+                            
+                            <div className="bg-gray-100 dark:bg-gray-800 rounded-md overflow-hidden mb-2">
+                              <div className="flex">
+                                <button 
+                                  className={`flex-1 py-2 text-sm ${activeTab === 'organic' ? 
+                                    'bg-kisan-green text-white dark:bg-kisan-gold dark:text-gray-900' : 
+                                    'text-gray-600 dark:text-gray-300'}`}
+                                  onClick={() => setActiveTab('organic')}
+                                >
+                                  Organic Solutions
+                                </button>
+                                <button 
+                                  className={`flex-1 py-2 text-sm ${activeTab === 'chemical' ? 
+                                    'bg-kisan-green text-white dark:bg-kisan-gold dark:text-gray-900' : 
+                                    'text-gray-600 dark:text-gray-300'}`}
+                                  onClick={() => setActiveTab('chemical')}
+                                >
+                                  Chemical Solutions
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {activeTab === 'organic' ? (
+                              <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc pl-5 border rounded-md p-3">
+                                {result.organic_solutions.map((solution, index) => (
+                                  <li key={index}>{solution}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc pl-5 border rounded-md p-3">
+                                {result.chemical_solutions.map((solution, index) => (
+                                  <li key={index}>{solution}</li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                          
+                          {/* Suitable crops section */}
+                          {result.suitable_crops && result.suitable_crops.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Suitable Crops
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {result.suitable_crops.map((crop, index) => (
+                                  <span 
+                                    key={index}
+                                    className="px-2 py-1 bg-kisan-green/10 dark:bg-kisan-gold/20 rounded-full text-xs text-kisan-green dark:text-kisan-gold"
+                                  >
+                                    {crop}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                              General Recommendations
                             </h4>
                             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc pl-5">
                               {result.recommendations.map((recommendation, index) => (
@@ -396,14 +570,13 @@ const SoilAnalysis = () => {
                                     user_id: "current_user_id", // TODO: Replace with actual user ID
                                     timestamp: new Date().toISOString(),
                                     type: "soil_analysis",
-                                    data: {
-                                      soil_type: result.soil_type,
-                                      confidence: result.confidence,
-                                      ph_level: result.ph_level,
-                                      nutrients: result.nutrients,
-                                      recommendations: result.recommendations
-                                    }
+                                    data: result
                                   });
+                                  
+                                  // Reload snapshots after saving
+                                  const history = await getFarmSnapshots("soil_analysis");
+                                  setSnapshots(history);
+                                  
                                   toast({
                                     title: "Snapshot Saved",
                                     description: "Your soil analysis has been saved locally."
@@ -514,6 +687,12 @@ const SoilAnalysis = () => {
                       </p>
                     </li>
                     <li className="text-gray-700 dark:text-gray-300">
+                      <span className="font-medium">Add your location</span>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Enter your district or region for location-specific recommendations.
+                      </p>
+                    </li>
+                    <li className="text-gray-700 dark:text-gray-300">
                       <span className="font-medium">Upload the image</span>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Click on "Browse Files" to select an image from your device or use the camera.
@@ -528,7 +707,13 @@ const SoilAnalysis = () => {
                     <li className="text-gray-700 dark:text-gray-300">
                       <span className="font-medium">Review results</span>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        You'll receive information about soil type, pH level, nutrients, and fertilizer recommendations.
+                        You'll receive information about soil type, pH level, nutrients, and both organic and chemical recommendations.
+                      </p>
+                    </li>
+                    <li className="text-gray-700 dark:text-gray-300">
+                      <span className="font-medium">Save or get expert advice</span>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        Save your results locally or submit for more detailed expert analysis.
                       </p>
                     </li>
                   </ol>

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -9,11 +8,12 @@ import { Link } from 'react-router-dom';
 interface HeaderProps {
   darkMode: boolean;
   toggleDarkMode: () => void;
+  language: string;
+  setLanguage: (lang: string) => void;
 }
 
-const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
+const Header = ({ darkMode, toggleDarkMode, language, setLanguage }: HeaderProps) => {
   const isMobile = useIsMobile();
-  const [language, setLanguage] = useState<string>('English');
   
   const languages = [
     { code: 'en', name: 'English' },
@@ -25,7 +25,7 @@ const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
   ];
   
   return (
-    <header className="sticky top-0 z-50 bg-white dark:bg-kisan-brown-dark border-b border-gray-200 dark:border-kisan-brown">
+    <header className="sticky top-0 z-50 bg-white dark:bg-kisan-brown-dark border-b border-gray-200 dark:border-kisan-brown shadow-md">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
           <div className="w-10 h-10 bg-kisan-green rounded-full flex items-center justify-center">
@@ -54,19 +54,16 @@ const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
                   Home
                 </Link>
                 <Link to="/disease-detection" className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                  Disease Detection
+                  {language === "हिंदी" ? "रोग पहचान" : "Disease Detection"}
                 </Link>
                 <Link to="/weather" className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                  Weather
+                  {language === "हिंदी" ? "मौसम" : "Weather"}
                 </Link>
                 <Link to="/crop-info" className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                  Crop Info
-                </Link>
-                <Link to="/success-stories" className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                  Success Stories
+                  {language === "हिंदी" ? "फसल जानकारी" : "Crop Info"}
                 </Link>
                 <Link to="/about" className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                  About
+                  {language === "हिंदी" ? "हमारे बारे में" : "About"}
                 </Link>
                 
                 <div className="border-t border-gray-200 dark:border-gray-700 my-2 pt-2">
@@ -92,7 +89,7 @@ const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
                   onClick={toggleDarkMode}
                 >
                   {darkMode ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                  {darkMode ? 'Light Mode' : 'Dark Mode'}
+                  {darkMode ? (language === "हिंदी" ? "लाइट मोड" : "Light Mode") : (language === "हिंदी" ? "डार्क मोड" : "Dark Mode")}
                 </Button>
               </div>
             </SheetContent>
@@ -101,28 +98,25 @@ const Header = ({ darkMode, toggleDarkMode }: HeaderProps) => {
           <div className="flex items-center space-x-6">
             <nav className="flex items-center space-x-4">
               <Link to="/" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                Home
+                {language === "हिंदी" ? "होम" : "Home"}
               </Link>
               <Link to="/disease-detection" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                Disease Detection
+                {language === "हिंदी" ? "रोग पहचान" : "Disease Detection"}
               </Link>
               <Link to="/weather" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                Weather
+                {language === "हिंदी" ? "मौसम" : "Weather"}
               </Link>
               <Link to="/crop-info" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                Crop Info
-              </Link>
-              <Link to="/success-stories" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                Success Stories
+                {language === "हिंदी" ? "फसल जानकारी" : "Crop Info"}
               </Link>
               <Link to="/about" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                About
+                {language === "हिंदी" ? "हमारे बारे में" : "About"}
               </Link>
             </nav>
             
             <div className="flex items-center space-x-3">
               <select 
-                className="border border-gray-300 dark:border-gray-700 rounded p-1 text-sm bg-white dark:bg-gray-800"
+                className="border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm bg-white dark:bg-gray-800 focus:ring-2 focus:ring-kisan-green"
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
               >

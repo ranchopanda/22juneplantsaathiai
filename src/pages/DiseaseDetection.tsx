@@ -67,7 +67,7 @@ const DiseaseDetection = () => {
                         <div className="flex items-center justify-center mb-4">
                           <Badge variant="outline" className="px-3 py-1 bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800 flex items-center gap-1">
                             <Sparkles className="h-3.5 w-3.5" />
-                            <span>Enhanced Analysis with Gemini 2.5 Flash</span>
+                            <span>Enhanced Analysis with Gemini 2.0 Flash</span>
                           </Badge>
                         </div>
                       )}
@@ -145,7 +145,7 @@ const DiseaseDetection = () => {
               
               {detectionResult && isAdvancedAnalysis && (
                 <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                  <p>This analysis was performed using Gemini 2.5 Flash Preview for maximum accuracy.</p>
+                  <p>This analysis was performed using Gemini 2.0 Flash for maximum accuracy.</p>
                 </div>
               )}
             </CardContent>
