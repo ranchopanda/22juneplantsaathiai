@@ -144,7 +144,7 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
       const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
       
       // Create a temporary image element to properly load the image
-      const img = new Image();
+      const img = new window.Image();
       img.onload = () => {
         // Create a fake event that mimics a file input change
         if (fileInputRef.current) {
