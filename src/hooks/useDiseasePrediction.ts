@@ -113,6 +113,21 @@ export const useDiseasePrediction = () => {
     // Create Disease Stage information
     const diseaseStage = analysisData.diseaseStageEstimation || "Unknown"; 
 
+    // Extract YouTube video recommendations from the raw response if available
+    let recommendedVideos: string[] = [];
+    if (analysisData.rawResponse) {
+      try {
+        const parsedResponse = JSON.parse(analysisData.rawResponse);
+        if (parsedResponse.analysisType === "diseased_plant" && parsedResponse.recommendedVideos) {
+          recommendedVideos = parsedResponse.recommendedVideos;
+        } else if (parsedResponse.analysisType === "weed" && parsedResponse.recommendedVideos) {
+          recommendedVideos = parsedResponse.recommendedVideos;
+        }
+      } catch (error) {
+        console.warn("Failed to parse raw response for video recommendations:", error);
+      }
+    }
+
     // Create FAQ questions from the analysis
     const faqs = [
       {
@@ -153,6 +168,7 @@ export const useDiseasePrediction = () => {
         ipm: ipmTreatments || [],
         cultural: culturalTreatments || []
       },
+      recommended_videos: recommendedVideos,
       faqs: faqs,
       tips: tips,
       yield_impact: yieldImpact,
@@ -228,7 +244,7 @@ export const useDiseasePrediction = () => {
         toast({
           title: "Analysis Partially Complete",
           description: "Using previous analysis results. There was an issue with the latest analysis.",
-          variant: "warning",
+          variant: "destructive",
         });
         // Use previous results to display something
         const mappedResult = mapToDetectionResult(previousAnalysisData);
@@ -319,9 +335,9 @@ export const useDiseasePrediction = () => {
       
       if (previousAnalysisData) {
         toast({
-          title: "Advanced Analysis Failed",
-          description: "Using previous results. Try again later when the service is less busy.",
-          variant: "warning",
+          title: "Advanced Analysis Partially Complete",
+          description: "There was an issue with the advanced analysis, but some results are available.",
+          variant: "destructive",
         });
         // We already have the previous results displayed, so no need to update
       } else {

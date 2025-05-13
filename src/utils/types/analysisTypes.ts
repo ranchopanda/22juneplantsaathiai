@@ -27,6 +27,7 @@ export interface QuickAnalysisData {
   // Optionally include basic context used for this quick analysis
   crop_type_provided?: string;
   location_provided?: string;
+  rawTextResponse?: string; // Added field to store the raw AI response
 }
 
 // New interface for detailed severity scoring
@@ -96,6 +97,9 @@ export interface AnalysisData {
   preventiveMeasures?: string[]; // Can be part of longTermPrevention or separate
   resistantVarietiesNote?: string;
   imageUrl?: string; // If you want to store the image URL that was analyzed
+  
+  // Raw JSON response from the API for additional processing
+  rawResponse?: string;
   
   // New fields for severity scoring and progression tracking
   severityScore?: SeverityScore;

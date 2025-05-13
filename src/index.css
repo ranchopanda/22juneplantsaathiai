@@ -226,6 +226,74 @@
   h2 {
     font-size: 1.5rem;
   }
+
+  /* Improved camera controls for mobile */
+  .camera-controls button {
+    min-height: 60px;
+    min-width: 60px;
+  }
+
+  /* Make camera buttons more visible */
+  .camera-button {
+    font-size: 1.1rem;
+    padding: 0.875rem 1.25rem;
+    width: 100%;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Stack buttons on mobile */
+  .mobile-stack {
+    flex-direction: column;
+  }
+
+  /* Full width containers on mobile */
+  .mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Ensure camera interface works well on mobile */
+.camera-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.camera-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  z-index: 10;
+}
+
+.camera-button {
+  border-radius: 9999px;
+  background-color: white;
+  color: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.camera-button:hover {
+  background-color: #f3f4f6;
+}
+
+.camera-button-large {
+  height: 3.5rem;
+  width: 3.5rem;
 }
 
 /* Loading Skeleton Components */

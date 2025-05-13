@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,32 +5,41 @@ import { Camera, X, Image as ImageIcon, RefreshCw } from "lucide-react";
 import { 
   requestCameraAccess, 
   stopCameraStream, 
-  capturePhoto 
+  capturePhoto,
+  isMobileDevice 
 } from "@/utils/cameraUtils";
 import { toast } from "sonner";
 
 interface CameraCaptureProps {
   onCapture: (file: File) => void;
   onClose?: () => void;
+  fullscreen?: boolean;
 }
 
 const CameraCapture: React.FC<CameraCaptureProps> = ({ 
   onCapture,
-  onClose 
+  onClose,
+  fullscreen = false
 }) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const isMobile = isMobileDevice();
 
   useEffect(() => {
+    // Try to auto-start camera on mobile
+    if (isMobile && fullscreen) {
+      startCamera();
+    }
+    
     return () => {
       // Clean up stream when component unmounts
       if (stream) {
         stopCameraStream(stream);
       }
     };
-  }, [stream]);
+  }, [stream, isMobile, fullscreen]);
 
   const startCamera = async () => {
     try {
@@ -102,18 +110,33 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
     }
     setIsActive(false);
   };
+  
+  const containerClasses = `
+    overflow-hidden w-full max-w-full camera-container
+    ${fullscreen ? 'fixed inset-0 z-50 m-0 rounded-none' : ''}
+  `;
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        <div className="relative">
+    <Card className={containerClasses}>
+      {fullscreen && onClose && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="absolute top-4 right-4 z-50 rounded-full bg-black/30 hover:bg-black/50 text-white border-none"
+          onClick={onClose}
+        >
+          <X className="h-5 w-5" />
+        </Button>
+      )}
+      <CardContent className={`p-0 ${fullscreen ? 'h-screen' : ''}`}>
+        <div className="relative h-full">
           {isActive ? (
             <>
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
-                className="w-full h-[300px] object-cover bg-black"
+                className={`w-full object-cover bg-black ${fullscreen ? 'h-full' : 'h-[300px] md:h-[350px]'}`}
                 onCanPlay={() => {
                   if (videoRef.current) {
                     videoRef.current.play();
@@ -121,32 +144,34 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
                 }}
               />
               
-              <div className="absolute inset-x-0 bottom-0 p-4 flex justify-center space-x-4 bg-gradient-to-t from-black/50 to-transparent">
+              <div className="camera-footer camera-controls">
                 <Button
                   variant="outline"
-                  className="rounded-full bg-white text-black hover:bg-gray-200"
+                  size="lg"
+                  className="camera-button camera-button-large"
                   onClick={stopCamera}
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-6 w-6" />
                 </Button>
                 
                 <Button
-                  className="rounded-full bg-white text-black hover:bg-gray-200"
+                  size="lg"
+                  className="camera-button camera-button-large"
                   onClick={takePicture}
                 >
-                  <Camera className="h-5 w-5" />
+                  <Camera className="h-6 w-6" />
                 </Button>
               </div>
             </>
           ) : (
-            <div className="p-6 flex flex-col items-center space-y-4">
+            <div className="p-6 flex flex-col items-center space-y-5">
               {error && (
-                <div className="text-red-500 text-sm mb-2 p-2 bg-red-50 rounded-md w-full">
+                <div className="text-red-500 text-sm mb-2 p-4 bg-red-50 rounded-md w-full">
                   {error}
                   <p className="mt-2 text-gray-600">
                     You can upload an image instead:
                   </p>
-                  <div className="mt-2">
+                  <div className="mt-3">
                     <input
                       id="file-upload"
                       type="file"
@@ -161,26 +186,32 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({
                     />
                     <label
                       htmlFor="file-upload"
-                      className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-kisan-green hover:bg-kisan-green-dark cursor-pointer"
+                      className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-kisan-green hover:bg-kisan-green-dark cursor-pointer w-full md:w-auto camera-button"
                     >
-                      <ImageIcon className="mr-2 h-4 w-4" />
+                      <ImageIcon className="mr-2 h-5 w-5" />
                       Upload Image
                     </label>
                   </div>
                 </div>
               )}
               
-              <div className="flex space-x-4">
+              <div className="flex flex-col sm:flex-row w-full sm:space-x-4 space-y-3 sm:space-y-0 mobile-stack">
                 <Button
-                  className="bg-kisan-green hover:bg-kisan-green-dark"
+                  size="lg"
+                  className="bg-kisan-green hover:bg-kisan-green-dark w-full py-6 text-base camera-button"
                   onClick={startCamera}
                 >
-                  <Camera className="mr-2 h-4 w-4" />
+                  <Camera className="mr-2 h-5 w-5" />
                   Open Camera
                 </Button>
                 
-                {onClose && (
-                  <Button variant="outline" onClick={onClose}>
+                {onClose && !fullscreen && (
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    onClick={onClose}
+                    className="w-full py-6 text-base camera-button"
+                  >
                     Cancel
                   </Button>
                 )}

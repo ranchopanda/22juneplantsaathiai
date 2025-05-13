@@ -27,6 +27,9 @@ export interface DetectionResult {
   recovery_chance?: string;
   resistant_varieties_note?: string;
   
+  // YouTube video recommendations
+  recommended_videos?: string[];
+  
   // Legacy fields
   next_steps?: string[];
   prevention_tips?: string[];

@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 // Types
@@ -15,6 +14,11 @@ export interface CameraState {
   error: string | null;
 }
 
+// Helper to detect mobile devices
+export const isMobileDevice = (): boolean => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
 // Function to request camera access
 export const requestCameraAccess = async (): Promise<MediaStream> => {
   try {
@@ -22,13 +26,24 @@ export const requestCameraAccess = async (): Promise<MediaStream> => {
       throw new Error("Camera API not available in this environment");
     }
     
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-      video: { 
-        facingMode: 'environment',
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      }
-    });
+    const isMobile = isMobileDevice();
+    
+    // Use different constraints for mobile vs desktop
+    const constraints = {
+      video: isMobile ? 
+        { 
+          facingMode: { ideal: 'environment' }, // Prefer back camera on mobile
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } : { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+    };
+    
+    console.log('Using camera constraints:', constraints);
+    
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     
     return stream;
   } catch (error: unknown) {
@@ -41,6 +56,9 @@ export const requestCameraAccess = async (): Promise<MediaStream> => {
         throw new Error("No camera found. Please make sure your device has a camera.");
       } else if (error.name === 'NotReadableError') {
         throw new Error("Camera is in use by another application.");
+      } else if (error.name === 'AbortError' || error.name === 'NotSupportedError') {
+        // This often happens on iOS Safari and other mobile browsers with restricted camera access
+        throw new Error("Your browser doesn't fully support camera access. Try another browser or upload an image instead.");
       }
       throw new Error("Failed to access camera: " + (error.message || "Unknown error"));
     }
@@ -67,8 +85,14 @@ export const capturePhoto = (
     
     try {
       const canvas = document.createElement('canvas');
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
+      
+      // Get video dimensions
+      const width = videoElement.videoWidth;
+      const height = videoElement.videoHeight;
+      
+      // Set canvas size to match video
+      canvas.width = width;
+      canvas.height = height;
       
       const context = canvas.getContext('2d');
       if (!context) {
@@ -77,7 +101,7 @@ export const capturePhoto = (
       }
       
       // Draw the video frame to the canvas
-      context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+      context.drawImage(videoElement, 0, 0, width, height);
       
       // Convert canvas to blob
       canvas.toBlob(

@@ -1,7 +1,14 @@
 import { AnalysisData, FarmerContext, QuickAnalysisData, PotentialIssue, SeverityScore, ProgressionTracking } from "../../types/analysisTypes";
+import { API_KEYS, SAFETY_SETTINGS as CONFIG_SAFETY_SETTINGS } from "../config/geminiConfig";
 
-// Read API key from environment variable
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY_PRIMARY as string;
+// Get a valid API key from the API_KEYS array
+const getApiKey = (): string => {
+  const validKey = API_KEYS.find(key => key && key.length > 0);
+  if (!validKey) {
+    throw new Error("No valid Gemini API key found in configuration.");
+  }
+  return validKey;
+};
 
 // API endpoints for Gemini - having multiple models for fallback
 const API_ENDPOINTS = {
@@ -53,7 +60,9 @@ const makeRequestWithRetries = async (
         currentEndpoint = API_ENDPOINTS.fallback;
       }
 
-      const requestUrl = `${currentEndpoint}?key=${GEMINI_API_KEY}`;
+      // Get API key for this request
+      const apiKey = getApiKey();
+      const requestUrl = `${currentEndpoint}?key=${apiKey}`;
       
       console.log(`API request attempt ${attempt + 1}/${maxRetries} to ${currentEndpoint.includes("gemini-2.0") ? "gemini-2.0-flash" : "gemini-1.5-flash"}`);
       
@@ -117,22 +126,60 @@ export const getQuickAnalysisFromGemini = async (
   imageData: string,
   quickContext: { location?: string; plantVariety?: string } = {} // Minimal context for quick analysis
 ): Promise<QuickAnalysisData> => {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key not found in environment variables.");
-  }
+  try {
+    // Ensure valid API key exists by calling getApiKey() - will throw if none found
+    getApiKey();
 
-  let promptText = `SYSTEM: You are AgriAdvisor AI. Provide a QUICK and PRELIMINARY assessment based ONLY on the provided image and minimal context (location, crop type).
-Focus on 1-3 most likely issues, offer very general, safe initial advice, and encourage the user to provide more details for a full diagnosis.
-Strictly format your entire response as a single JSON object. Do not include any text outside of this JSON object, including markdown formatting.
-The JSON object should conform to the following structure:
-{
-  "potentialIssues": [
-    { "name": "string (e.g., 'Possible Early Blight')", "reasoning": "string (Brief reasoning based on image)" }
-  ],
-  "initialConfidence": "string ('Very Low', 'Low', 'Medium', or 'High' - for the overall preliminary assessment)",
-  "generalAdvice": ["string (1-2 very general, safe initial tips, e.g., 'Isolate affected plants if possible.')"],
-  "nextStepPrompt": "string (e.g., 'This is a preliminary look. For a detailed diagnosis and tailored treatment plan, please provide more information about symptoms and conditions.')"
-}
+    let promptText = `SYSTEM: You are AgriAdvisor AI. Provide a QUICK and PRELIMINARY assessment based ONLY on the provided image and minimal context (location, crop type).
+
+Your response MUST follow these formats based on what you see in the image:
+
+1. If the image is a HEALTHY PLANT:
+   Respond: "This plant appears healthy. No visible disease or weed presence."
+   Then share 2-3 basic tips to keep the crop healthy (watering, weeding, spacing, etc.)
+
+2. If the image shows a DISEASED PLANT:
+   Format your response as:
+   Crop Name:
+   Disease Name:
+   Pathogen (if known):
+   Severity Level: (Low / Moderate / High)
+   Confidence Level: (%)
+   
+   🔍 Symptoms (English):
+   - Describe symptoms seen in the image
+   
+   🛠️ Action Plan:
+   - 3-5 farmer-friendly treatment steps
+   
+   🌱 Organic Treatment:
+   - Name and how to apply
+   
+   ⚠️ Chemical Treatment:
+   - Name, dosage, when to spray, and precautions
+   
+   🎥 YouTube Videos in Hindi:
+   - Suggest 2 Hindi videos that explain this disease or treatment
+
+3. If the image shows a WEED:
+   Format your response as:
+   Weed Name (if known):
+   Why it is harmful:
+   - Nutrient competition / pest host / yield loss, etc.
+   
+   How to control it:
+   - Manual method
+   - Organic method (like vinegar, mulch, cow dung slurry)
+   - Chemical method (name, dosage, timing)
+   
+   🎥 YouTube Videos in Hindi:
+   - Suggest 1-2 videos in Hindi showing farmers how to remove or control this weed.
+
+IMPORTANT: 
+- Use simple English with short sentences
+- Tailor advice for Indian farmers
+- If weed or disease name is unknown, describe what it looks like and suggest a common solution
+- For this quick analysis, just provide the text in the format above, not as JSON
 
 FARMER PROVIDED IMAGE AND MINIMAL CONTEXT:
 Image: [Attached Below]
@@ -141,17 +188,6 @@ Image: [Attached Below]
   if (quickContext.location) promptText += `Location: ${quickContext.location}\n`;
   if (quickContext.plantVariety) promptText += `Crop Type: ${quickContext.plantVariety}\n`;
 
-  promptText += `
-TASK:
-1. Identify 1-3 most probable issues based *only* on the image and provided minimal context.
-2. Briefly state the reasoning for each potential issue.
-3. Provide an overall initial confidence level for this preliminary assessment.
-4. Suggest 1-2 very general and safe pieces of advice.
-5. Include a clear prompt for the user to seek a more detailed analysis.
-6. Ensure the response is ONLY the JSON object specified above. No extra text.
-`;
-
-  try {
     const requestBody = {
       contents: [
         {
@@ -183,38 +219,101 @@ TASK:
     }
 
     let rawText = responseData.candidates[0].content.parts[0].text;
-    rawText = rawText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-
-    let parsedResult;
-    try {
-      parsedResult = JSON.parse(rawText);
-    } catch (jsonError) {
-      console.error("Failed to parse JSON response for quick analysis:", jsonError, "\nRaw text:", rawText);
-      // Attempt to extract JSON if embedded
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          parsedResult = JSON.parse(jsonMatch[0]);
-        } catch (secondJsonError) {
-          console.error("Failed to parse extracted JSON for quick analysis:", secondJsonError);
-          throw new Error("Failed to parse Gemini response as JSON for quick analysis (after extraction attempt).");
-        }
-      } else {
-        throw new Error("Failed to parse Gemini response as JSON for quick analysis.");
-      }
-    }
     
+    // Create a structured response based on the text
+    const isHealthy = rawText.includes("This plant appears healthy") || rawText.toLowerCase().includes("no visible disease");
+    const isWeed = rawText.toLowerCase().includes("weed name") || (rawText.toLowerCase().includes("weed") && !rawText.toLowerCase().includes("disease"));
+    
+    let potentialIssues: PotentialIssue[] = [];
+    let initialConfidence = "Low" as "Low" | "Medium" | "High" | "Very Low";
+    let generalAdvice: string[] = [];
+    let nextStepPrompt = "";
+    
+    if (isHealthy) {
+      potentialIssues = [{ name: "Healthy Plant", reasoning: "No visible disease or pest issues detected in image." }];
+      initialConfidence = "High" as "Low" | "Medium" | "High" | "Very Low";
+      
+      // Extract care tips
+      const tipMatches = rawText.match(/- [^\n]+/g);
+      if (tipMatches) {
+        generalAdvice = tipMatches.map(tip => tip.replace(/^- /, ''));
+      } else {
+        generalAdvice = ["Regular watering", "Keep area weed-free", "Monitor regularly for any changes"];
+      }
+      nextStepPrompt = "Your plant looks healthy! Continue with regular care.";
+    } 
+    else if (isWeed) {
+      // Extract weed name
+      const weedNameMatch = rawText.match(/Weed Name[^:]*:\s*([^\n]+)/);
+      const weedName = weedNameMatch ? weedNameMatch[1].trim() : "Unknown Weed";
+      
+      potentialIssues = [{ name: `Weed: ${weedName}`, reasoning: "Weed detected in image." }];
+      initialConfidence = "Medium" as "Low" | "Medium" | "High" | "Very Low";
+      
+      // Extract control methods
+      const controlMatches = rawText.match(/- [^\n]+/g);
+      if (controlMatches) {
+        generalAdvice = controlMatches.slice(0, 3).map(method => method.replace(/^- /, ''));
+      } else {
+        generalAdvice = ["Remove manually", "Apply organic mulch", "Consider appropriate herbicide if severe"];
+      }
+      nextStepPrompt = "Consider removing this weed promptly to prevent competition with your crops.";
+    }
+    else {
+      // It's a disease - extract disease name
+      const diseaseNameMatch = rawText.match(/Disease Name:\s*([^\n]+)/);
+      const diseaseName = diseaseNameMatch ? diseaseNameMatch[1].trim() : "Unknown Disease";
+      
+      // Extract confidence level
+      const confidenceMatch = rawText.match(/Confidence Level:\s*(\d+)/);
+      const confidence = confidenceMatch ? confidenceMatch[1] : "60";
+      
+      // Extract severity
+      const severityMatch = rawText.match(/Severity Level:\s*([^\n]+)/);
+      const severity = severityMatch ? severityMatch[1].trim() : "Moderate";
+      
+      // Determine initialConfidence based on confidence and severity
+      if (parseInt(confidence) > 80 || severity.toLowerCase().includes("high")) {
+        initialConfidence = "High" as "Low" | "Medium" | "High" | "Very Low";
+      } else if (parseInt(confidence) > 60 || severity.toLowerCase().includes("moderate")) {
+        initialConfidence = "Medium" as "Low" | "Medium" | "High" | "Very Low";
+      } else {
+        initialConfidence = "Low" as "Low" | "Medium" | "High" | "Very Low";
+      }
+      
+      // Extract symptoms
+      const symptomsSection = rawText.split("🔍 Symptoms")[1]?.split("🛠️")[0];
+      const symptomsMatches = symptomsSection?.match(/- [^\n]+/g);
+      const symptomsReasoning = symptomsMatches ? 
+        symptomsMatches.map(s => s.replace(/^- /, '')).join("; ") : 
+        "Visual symptoms detected in image";
+      
+      potentialIssues = [{ name: diseaseName, reasoning: symptomsReasoning }];
+      
+      // Extract action plan
+      const actionSection = rawText.split("🛠️ Action Plan")[1]?.split("🌱")[0];
+      const actionMatches = actionSection?.match(/- [^\n]+/g);
+      if (actionMatches) {
+        generalAdvice = actionMatches.map(action => action.replace(/^- /, ''));
+      } else {
+        generalAdvice = ["Isolate affected plants", "Remove infected plant parts", "Apply appropriate treatment"];
+      }
+      
+      nextStepPrompt = "This disease requires prompt attention. Follow the recommended treatment plan.";
+    }
+
     // Construct QuickAnalysisData
     const quickAnalysisResult: QuickAnalysisData = {
       id: `gemini-quick-${new Date().getTime()}`,
       timestamp: new Date().toISOString(),
-      potentialIssues: parsedResult.potentialIssues || [{ name: "Unknown Issue", reasoning: "Could not determine potential issues from image." }],
-      initialConfidence: parsedResult.initialConfidence || "Low",
-      generalAdvice: parsedResult.generalAdvice || ["Monitor the plant closely."],
-      nextStepPrompt: parsedResult.nextStepPrompt || "For a detailed diagnosis, please provide more information.",
+      potentialIssues: potentialIssues,
+      initialConfidence: initialConfidence,
+      generalAdvice: generalAdvice,
+      nextStepPrompt: nextStepPrompt,
       model_version: responseData.modelId || API_ENDPOINTS.primary.split('/').pop()?.split(':')[0], // Extract model name
       crop_type_provided: quickContext.plantVariety,
       location_provided: quickContext.location,
+      rawTextResponse: rawText // Include full raw text for frontend display
     };
 
     return quickAnalysisResult;
@@ -429,39 +528,93 @@ export const analyzeWithGemini = async (
   imageData: string,
   farmerContext: FarmerContext = {} // Add farmerContext, default to empty object
 ): Promise<AnalysisData> => {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key not found in environment variables.");
-  }
+  try {
+    // Ensure valid API key exists by calling getApiKey() - will throw if none found
+    getApiKey();
 
-  // Construct the detailed prompt with added content for severity scoring
-  let promptText = `SYSTEM: You are AgriAdvisor AI, an expert agronomist and plant pathologist. The user has requested a DETAILED ANALYSIS. Your primary goal is to provide highly practical, specific, actionable, and (if location is provided) localized advice to farmers. Analyze the provided plant image and all contextual information from the farmer.
+    // Construct the detailed prompt with added content for severity scoring
+    let promptText = `SYSTEM: You are AgriAdvisor AI, an expert agronomist and plant pathologist specializing in Indian agriculture. Analyze the provided plant image and all contextual information from the farmer.
 
-Strictly format your entire response as a single JSON object. Do not include any text outside of this JSON object, including markdown formatting like "\`\`\`json" or "\`\`\`".
-The JSON object should conform to the following structure, populating all fields appropriately:
-{
-  "diseaseOrPestName": "string (e.g., 'Tomato Yellow Leaf Curl Virus (TYLCV)' or 'Aphids')",
-  "confidence": "number (0.0 to 1.0, e.g., 0.95)",
-  "symptomsAnalysis": "string (Detailed description of symptoms visible in the image and commonly associated, tailored to farmer observations if provided)",
-  "diseaseStageEstimation": "string ('Early', 'Moderate', 'Advanced', or 'Unknown', estimated based on image and farmer context)",
-  "impactAssessment": {
-    "yieldImpact": "string (e.g., 'Moderate (30-70% potential loss if untreated)', 'Low (5-20%)')",
-    "spreadRisk": "string ('Low', 'Medium', 'High')",
-    "recoveryChance": "string ('Low', 'Medium', 'High' for the farm/less affected plants)"
-  },
-  "prioritizedActionPlan": {
-    "immediateActions": ["string (Action 1 for next 24-72 hours)", "string (Action 2...)"],
-    "shortTermManagement": ["string (Action 1 for next 1-3 weeks)", "string (Action 2...)"],
-    "longTermPrevention": ["string (Action 1 for future seasons/prevention)", "string (Action 2...)"]
-  },
-  "treatmentOptions": {
-    "organic": ["string (Specific organic treatment 1 with brief application advice, e.g., 'Neem Oil: Apply 2ml/L water every 7 days, ensuring full coverage.')", "string (Organic treatment 2...)"],
-    "chemical": ["string (Specific chemical treatment 1 mentioning active ingredient/class and MoA rotation if relevant, e.g., 'Imidacloprid (Neonicotinoid - Group 4A): Apply as per label. Rotate with different MoA insecticide for whitefly control. Note local restrictions.')", "string (Chemical treatment 2...)"],
-    "ipm": ["string (Specific IPM strategy 1, could be a combination of tactics)", "string (IPM strategy 2...)"],
-    "culturalBiological": ["string (Cultural practice 1, e.g., 'Remove and destroy infected plants immediately and carefully.')", "string (Biological control agent 1, e.g., 'Introduce Encarsia formosa wasps.')"]
-  },
-  "resistantVarietiesNote": "string (Note on checking for or using resistant varieties, localized if possible e.g., 'For [Farmer's Location], look for TYLCV-resistant varieties like [Example Variety Name] at local nurseries.')",
-  "additionalNotes": "string (Any other critical warnings, advice, or information, e.g., 'Whiteflies are the primary vector. Focus on their control.')"
-}
+Your response MUST follow these formats based on what you see in the image:
+
+1. If the image is a HEALTHY PLANT:
+   Respond in JSON format:
+   {
+     "analysisType": "healthy_plant",
+     "message": "This plant appears healthy. No visible disease or weed presence.",
+     "healthTips": [
+       "Tip 1 to keep the crop healthy",
+       "Tip 2...",
+       "Tip 3..."
+     ]
+   }
+
+2. If the image shows a DISEASED PLANT:
+   Respond in JSON format:
+   {
+     "analysisType": "diseased_plant",
+     "cropName": "Name of crop",
+     "diseaseName": "Name of disease",
+     "pathogen": "Pathogen name if known or 'Unknown'",
+     "severityLevel": "Low / Moderate / High",
+     "confidenceLevel": percentage as number (e.g., 85),
+     "symptoms": [
+       "Symptom 1 seen in the image",
+       "Symptom 2...",
+       "Symptom 3..."
+     ],
+     "actionPlan": [
+       "Step 1 - farmer-friendly treatment",
+       "Step 2...",
+       "Step 3...",
+       "Step 4...",
+       "Step 5..."
+     ],
+     "organicTreatment": {
+       "name": "Name of organic treatment",
+       "application": "How to apply"
+     },
+     "chemicalTreatment": {
+       "name": "Name of chemical treatment",
+       "dosage": "Recommended dosage",
+       "timing": "When to spray",
+       "precautions": "Safety precautions"
+     },
+     "recommendedVideos": [
+       "Title of Hindi YouTube video about this disease or treatment",
+       "Title of another Hindi YouTube video"
+     ],
+     "diseaseStageEstimation": "Early / Moderate / Advanced",
+     "yieldImpact": "Potential yield loss percentage or description",
+     "spreadRisk": "Low / Medium / High"
+   }
+
+3. If the image shows a WEED:
+   Respond in JSON format:
+   {
+     "analysisType": "weed",
+     "weedName": "Name of weed if known or description if unknown",
+     "harmfulEffects": [
+       "Effect 1 (e.g., Nutrient competition)",
+       "Effect 2...",
+       "Effect 3..."
+     ],
+     "controlMethods": {
+       "manual": "Description of manual removal method",
+       "organic": "Name and application of organic method",
+       "chemical": "Name, dosage and timing of chemical method"
+     },
+     "recommendedVideos": [
+       "Title of Hindi YouTube video about controlling this weed",
+       "Title of another Hindi YouTube video"
+     ]
+   }
+
+IMPORTANT: 
+- Use simple English with short sentences
+- Tailor advice for Indian farmers
+- If weed or disease name is unknown, describe what it looks like and suggest a common solution
+- Ensure JSON format is valid
 
 FARMER PROVIDED IMAGE AND DETAILED CONTEXT:
 Image: [Attached Below]
@@ -478,21 +631,6 @@ Image: [Attached Below]
   if (farmerContext.recentTreatmentsOrChanges) promptText += `Recent Treatments or Changes: ${farmerContext.recentTreatmentsOrChanges}\n`;
   if (farmerContext.previousAnalysisId) promptText += `Previous Analysis ID: ${farmerContext.previousAnalysisId} (This is a follow-up analysis for tracking disease progression)\n`;
 
-  promptText += `
-TASK:
-1.  Identify the primary disease or pest affecting the plant in the image, considering all farmer-provided context.
-2.  Provide a confidence score for this identification.
-3.  Analyze symptoms comprehensively, correlating with farmer's observations.
-4.  Estimate the disease/pest stage.
-5.  Assess potential yield impact, spread risk, and recovery chance.
-6.  Formulate a prioritized action plan (Immediate, Short-term, Long-term).
-7.  Detail specific treatment options, clearly distinguishing between Organic, Chemical, IPM, and Cultural/Biological methods. Strongly tailor suggestions towards the farmer's practice preference if given, but list key alternatives. Be specific (e.g., mention active ingredients for chemicals, specific biological agents, application rates if standard).
-8.  Include a note about resistant varieties, making it local if possible based on location context.
-9.  Add any crucial additional notes.
-10. Ensure the response is ONLY the JSON object specified above.
-`;
-
-  try {
     const requestBody = {
       contents: [
         {
@@ -552,80 +690,226 @@ TASK:
       }
     }
 
-    // Basic validation for critical fields
-    if (!parsedResult.diseaseOrPestName || typeof parsedResult.confidence !== 'number') {
-      console.warn("Parsed result missing critical fields:", parsedResult);
-      // We'll continue anyway and use defaults for missing values
-    }
-
-    // Calculate severity score
-    const severityScore = calculateSeverityScore(parsedResult);
-    
-    // Track disease progression if previous analysis ID is provided
-    const progressionTracking = farmerContext.previousAnalysisId ? 
-      await trackDiseaseProgression(parsedResult, farmerContext.previousAnalysisId) : 
-      undefined;
-
-    // Construct the full AnalysisData object
+    // Construct the full AnalysisData object based on analysis type
     const analysisResult: AnalysisData = {
       id: `gemini-detailed-${new Date().getTime()}`,
       type: "plant_disease_or_pest",
       timestamp: new Date().toISOString(),
+      rawResponse: rawText,  // Store the raw response for debugging
       
-      // Save both in old format fields (for backward compatibility) and new format
-      // Legacy fields
-      disease_name: parsedResult.diseaseOrPestName || "Unknown Diagnosis",
-      confidence: Math.round((parsedResult.confidence || 0.5) * 100), // Convert 0-1 to 0-100
-      description: parsedResult.symptomsAnalysis || "No symptoms analysis provided.",
-      severity: parsedResult.diseaseStageEstimation || "Unknown",
+      // Default values
+      disease_name: "Unknown",
+      confidence: 0,
+      description: "",
+      severity: "Unknown",
       crop_type: farmerContext.plantVariety || "Unknown Plant",
-      yield_impact: parsedResult.impactAssessment?.yieldImpact || "Unknown",
-      spread_risk: parsedResult.impactAssessment?.spreadRisk || "Medium",
-      recovery_chance: parsedResult.impactAssessment?.recoveryChance || "Medium",
-      recommendations: [
-        ...(parsedResult.prioritizedActionPlan?.immediateActions || []),
-        ...(parsedResult.prioritizedActionPlan?.shortTermManagement || []),
-      ],
-      treatment_steps: [
-        ...(parsedResult.treatmentOptions?.organic || []),
-        ...(parsedResult.treatmentOptions?.chemical || []),
-        ...(parsedResult.treatmentOptions?.ipm || []),
-        ...(parsedResult.treatmentOptions?.culturalBiological || []),
-      ],
-      preventive_measures: [
-        ...(parsedResult.prioritizedActionPlan?.longTermPrevention || []),
-      ],
-      additional_notes: parsedResult.additionalNotes || "",
+      yield_impact: "Unknown",
+      spread_risk: "Unknown",
+      recovery_chance: "Unknown",
+      recommendations: [],
+      treatment_steps: [],
+      preventive_measures: [],
+      additional_notes: "",
       model_version: responseData.modelId || "gemini-2.0-flash",
-      
-      // Enhanced fields
-      diseaseOrPestName: parsedResult.diseaseOrPestName || "Unknown Diagnosis",
-      confidence_score: parsedResult.confidence || 0.5,
-      symptomsAnalysis: parsedResult.symptomsAnalysis || "No symptoms analysis provided.",
-      diseaseStageEstimation: parsedResult.diseaseStageEstimation || "Unknown",
-      impactAssessment: parsedResult.impactAssessment || {
+      diseaseOrPestName: "Unknown",
+      confidence_score: 0,
+      symptomsAnalysis: "",
+      diseaseStageEstimation: "Unknown",
+      impactAssessment: {
         yieldImpact: "Unknown",
-        spreadRisk: "Medium",
-        recoveryChance: "Medium"
+        spreadRisk: "Medium" as "Low" | "Medium" | "High",
+        recoveryChance: "Medium" as "Low" | "Medium" | "High"
       },
-      prioritizedActionPlan: parsedResult.prioritizedActionPlan || {
-        immediateActions: ["No immediate actions specified."],
-        shortTermManagement: ["No short-term management specified."],
-        longTermPrevention: ["No long-term prevention specified."]
+      prioritizedActionPlan: {
+        immediateActions: [],
+        shortTermManagement: [],
+        longTermPrevention: []
       },
-      treatmentOptions: parsedResult.treatmentOptions || {
+      treatmentOptions: {
         organic: [],
         chemical: [],
         ipm: [],
         culturalBiological: []
       },
-      resistantVarietiesNote: parsedResult.resistantVarietiesNote || "",
-      imageUrl: imageData?.substring(0, 20) ? `[Image data truncated]` : null, // Just store a reference, not the actual base64
-      
-      // Add severity score and progression tracking
-      severityScore,
-      progressionTracking
+      resistantVarietiesNote: "",
+      imageUrl: imageData?.substring(0, 20) ? `[Image data truncated]` : null,
     };
+    
+    // Process based on analysis type
+    if (parsedResult.analysisType === "healthy_plant") {
+      // Healthy plant
+      analysisResult.disease_name = "Healthy Plant";
+      analysisResult.diseaseOrPestName = "Healthy Plant";
+      analysisResult.confidence = 90;
+      analysisResult.confidence_score = 0.9;
+      analysisResult.description = parsedResult.message;
+      analysisResult.symptomsAnalysis = parsedResult.message;
+      analysisResult.severity = "None";
+      analysisResult.diseaseStageEstimation = "Unknown";
+      analysisResult.recommendations = parsedResult.healthTips || [];
+      analysisResult.preventive_measures = parsedResult.healthTips || [];
+      analysisResult.prioritizedActionPlan.longTermPrevention = parsedResult.healthTips || [];
+      analysisResult.additional_notes = "Plant appears healthy. Continue regular maintenance.";
+      
+      // Calculate basic severity score for healthy plant
+      analysisResult.severityScore = {
+        overall: 1,
+        leafDamage: 0,
+        stemDamage: 0,
+        fruitDamage: 0,
+        rootDamage: 0,
+        spreadRate: 0,
+        economicImpact: 0,
+        treatmentDifficulty: 0
+      };
+    } 
+    else if (parsedResult.analysisType === "diseased_plant") {
+      // Diseased plant
+      analysisResult.disease_name = parsedResult.diseaseName;
+      analysisResult.diseaseOrPestName = parsedResult.diseaseName;
+      analysisResult.confidence = parsedResult.confidenceLevel || 75;
+      analysisResult.confidence_score = (parsedResult.confidenceLevel || 75) / 100;
+      analysisResult.description = parsedResult.symptoms?.join(". ") || "";
+      analysisResult.symptomsAnalysis = parsedResult.symptoms?.join(". ") || "";
+      analysisResult.severity = parsedResult.severityLevel || "Moderate";
+      analysisResult.diseaseStageEstimation = parsedResult.diseaseStageEstimation || parsedResult.severityLevel || "Moderate";
+      analysisResult.yield_impact = parsedResult.yieldImpact || "Unknown";
+      analysisResult.spread_risk = parsedResult.spreadRisk || "Medium";
+      
+      // Set recommendations and treatment steps
+      analysisResult.recommendations = parsedResult.actionPlan || [];
+      analysisResult.treatment_steps = [];
+      
+      // Add organic treatment
+      if (parsedResult.organicTreatment?.name) {
+        const organicDescription = `${parsedResult.organicTreatment.name}: ${parsedResult.organicTreatment.application}`;
+        analysisResult.treatment_steps.push(organicDescription);
+        analysisResult.treatmentOptions.organic.push(organicDescription);
+      }
+      
+      // Add chemical treatment
+      if (parsedResult.chemicalTreatment?.name) {
+        const chemicalDescription = `${parsedResult.chemicalTreatment.name}: ${parsedResult.chemicalTreatment.dosage}. Apply: ${parsedResult.chemicalTreatment.timing}. ${parsedResult.chemicalTreatment.precautions}`;
+        analysisResult.treatment_steps.push(chemicalDescription);
+        analysisResult.treatmentOptions.chemical.push(chemicalDescription);
+      }
+      
+      // Action plan distribution
+      if (parsedResult.actionPlan && parsedResult.actionPlan.length > 0) {
+        // Split action plan between immediate and short term
+        const midpoint = Math.ceil(parsedResult.actionPlan.length / 2);
+        analysisResult.prioritizedActionPlan.immediateActions = parsedResult.actionPlan.slice(0, midpoint);
+        analysisResult.prioritizedActionPlan.shortTermManagement = parsedResult.actionPlan.slice(midpoint);
+      }
+      
+      // Add YouTube video recommendations to notes
+      if (parsedResult.recommendedVideos && parsedResult.recommendedVideos.length > 0) {
+        analysisResult.additional_notes = `Recommended Hindi YouTube videos: ${parsedResult.recommendedVideos.join(", ")}`;
+      }
+      
+      // Build impact assessment
+      analysisResult.impactAssessment = {
+        yieldImpact: parsedResult.yieldImpact || "Unknown",
+        spreadRisk: parsedResult.spreadRisk || "Medium",
+        recoveryChance: parsedResult.severityLevel === "High" ? "Low" : 
+                        parsedResult.severityLevel === "Moderate" ? "Medium" : "High"
+      };
+      
+      // Calculate severity score
+      analysisResult.severityScore = calculateSeverityScore(parsedResult);
+    }
+    else if (parsedResult.analysisType === "weed") {
+      // Weed analysis
+      analysisResult.disease_name = `Weed: ${parsedResult.weedName}`;
+      analysisResult.diseaseOrPestName = `Weed: ${parsedResult.weedName}`;
+      analysisResult.confidence = 85;
+      analysisResult.confidence_score = 0.85;
+      analysisResult.description = parsedResult.harmfulEffects?.join(". ") || "";
+      analysisResult.symptomsAnalysis = `This is a weed: ${parsedResult.weedName}. ${parsedResult.harmfulEffects?.join(". ")}`;
+      analysisResult.severity = "Moderate";
+      analysisResult.diseaseStageEstimation = "Unknown";
+      
+      // Set recommendations
+      const controlMethods = [];
+      if (parsedResult.controlMethods?.manual) {
+        controlMethods.push(`Manual control: ${parsedResult.controlMethods.manual}`);
+      }
+      if (parsedResult.controlMethods?.organic) {
+        controlMethods.push(`Organic control: ${parsedResult.controlMethods.organic}`);
+      }
+      if (parsedResult.controlMethods?.chemical) {
+        controlMethods.push(`Chemical control: ${parsedResult.controlMethods.chemical}`);
+      }
+      
+      analysisResult.recommendations = controlMethods;
+      analysisResult.treatment_steps = controlMethods;
+      
+      // Organize into treatment options
+      if (parsedResult.controlMethods?.organic) {
+        analysisResult.treatmentOptions.organic.push(parsedResult.controlMethods.organic);
+      }
+      if (parsedResult.controlMethods?.chemical) {
+        analysisResult.treatmentOptions.chemical.push(parsedResult.controlMethods.chemical);
+      }
+      if (parsedResult.controlMethods?.manual) {
+        analysisResult.treatmentOptions.culturalBiological.push(parsedResult.controlMethods.manual);
+      }
+      
+      // Action plan distribution
+      analysisResult.prioritizedActionPlan = {
+        immediateActions: [`Remove the weed: ${parsedResult.controlMethods?.manual || "Manual removal is recommended"}`],
+        shortTermManagement: parsedResult.controlMethods?.organic ? 
+          [`Apply organic control: ${parsedResult.controlMethods.organic}`] : [],
+        longTermPrevention: ["Maintain clean field borders", "Use crop rotation", "Use clean equipment"]
+      };
+      
+      // Add YouTube video recommendations to notes
+      if (parsedResult.recommendedVideos && parsedResult.recommendedVideos.length > 0) {
+        analysisResult.additional_notes = `Recommended Hindi YouTube videos: ${parsedResult.recommendedVideos.join(", ")}`;
+      }
+      
+      // Calculate severity score for weed
+      analysisResult.severityScore = {
+        overall: 5,  // Medium priority for weeds
+        leafDamage: 0,
+        stemDamage: 0,
+        fruitDamage: 0,
+        rootDamage: 0,
+        spreadRate: 6,  // Weeds tend to spread
+        economicImpact: 5,  // Medium economic impact
+        treatmentDifficulty: 4  // Usually manageable
+      };
+    }
+    else {
+      // Fallback for unknown analysis type
+      console.warn("Unknown analysis type in response:", parsedResult.analysisType);
+      
+      // Try to extract some useful information
+      if (parsedResult.diseaseName || parsedResult.diseaseOrPestName) {
+        analysisResult.disease_name = parsedResult.diseaseName || parsedResult.diseaseOrPestName;
+        analysisResult.diseaseOrPestName = parsedResult.diseaseName || parsedResult.diseaseOrPestName;
+      }
+      
+      if (parsedResult.symptoms || parsedResult.symptomsAnalysis) {
+        analysisResult.description = parsedResult.symptoms || parsedResult.symptomsAnalysis;
+        analysisResult.symptomsAnalysis = parsedResult.symptoms || parsedResult.symptomsAnalysis;
+      }
+      
+      if (parsedResult.actionPlan || parsedResult.recommendations) {
+        analysisResult.recommendations = parsedResult.actionPlan || parsedResult.recommendations || [];
+      }
+      
+      // Calculate basic severity score
+      analysisResult.severityScore = calculateSeverityScore(parsedResult);
+    }
+    
+    // Track disease progression if previous analysis ID is provided
+    if (farmerContext.previousAnalysisId) {
+      analysisResult.progressionTracking = await trackDiseaseProgression(
+        parsedResult,
+        farmerContext.previousAnalysisId
+      );
+    }
     
     return analysisResult;
 

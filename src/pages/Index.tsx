@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
@@ -18,8 +18,25 @@ const Index = () => {
   const [language, setLanguage] = useState<string>("English");
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const speechSynthesisRef = useRef<SpeechSynthesis | null>(null);
+
+  // Initialize speech synthesis on component mount
+  useEffect(() => {
+    // Check if SpeechSynthesis is available in the browser
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      speechSynthesisRef.current = window.speechSynthesis;
+    }
+    
+    // Cleanup function to cancel any ongoing speech on unmount
+    return () => {
+      if (speechSynthesisRef.current) {
+        speechSynthesisRef.current.cancel();
+      }
+    };
+  }, []);
 
   // Simulate loading
   useEffect(() => {
@@ -38,10 +55,55 @@ const Index = () => {
   };
 
   const playInstructions = (instructions: string[]) => {
-    // This would use the Web Speech API in a real implementation
+    if (!speechSynthesisRef.current) {
+      toast({
+        title: "Voice Not Available",
+        description: "Text-to-speech is not supported in your browser.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Cancel any existing speech
+    speechSynthesisRef.current.cancel();
+    
+    // If we're currently speaking, just stop
+    if (isSpeaking) {
+      setIsSpeaking(false);
+      return;
+    }
+    
+    // Join instructions into a single message with pauses
+    const text = instructions.join(". ");
+    
+    // Create a new speech utterance
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Set language based on current language
+    utterance.lang = language === "हिंदी" ? "hi-IN" : "en-US";
+    
+    // Set voice properties
+    utterance.rate = 0.9; // Slightly slower than normal
+    utterance.pitch = 1;
+    
+    // Event handlers
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      toast({
+        title: "Speech Error",
+        description: "An error occurred while playing voice instructions.",
+        variant: "destructive",
+      });
+    };
+    
+    // Speak the text
+    speechSynthesisRef.current.speak(utterance);
+    
     toast({
-      title: "Voice Instructions",
-      description: "Playing audio instructions in Hindi",
+      title: language === "हिंदी" ? "वॉयस निर्देश" : "Voice Instructions",
+      description: language === "हिंदी" ? "निर्देश बोले जा रहे हैं" : "Playing voice instructions",
     });
   };
 
@@ -61,7 +123,8 @@ const Index = () => {
       hindiName: "चावल",
       description: "India's staple food crop, grown mainly in the monsoon season.",
       icon: <Sprout className="h-10 w-10 text-kisan-green dark:text-kisan-gold" />,
-      image: "https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=300&auto=format",
+      image: "/assets/crops/rice.jpg",
+      fallbackImage: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f8f9fa'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='24' fill='%23adb5bd'%3ERice Image%3C/text%3E%3C/svg%3E",
       action: () => navigate("/crop-info")
     },
     {
@@ -69,7 +132,8 @@ const Index = () => {
       hindiName: "गेहूं",
       description: "A major rabi crop grown during winter months across northern India.",
       icon: <Wheat className="h-10 w-10 text-kisan-green dark:text-kisan-gold" />,
-      image: "https://images.unsplash.com/photo-1631124230593-60188ac0ba3e?q=80&w=300&auto=format",
+      image: "/assets/crops/wheat.jpg",
+      fallbackImage: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f8f9fa'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='24' fill='%23adb5bd'%3EWheat Image%3C/text%3E%3C/svg%3E",
       action: () => navigate("/crop-info")
     },
     {
@@ -77,7 +141,8 @@ const Index = () => {
       hindiName: "कपास",
       description: "India is one of the world's largest producers of cotton.",
       icon: <Sprout className="h-10 w-10 text-kisan-green dark:text-kisan-gold" />,
-      image: "https://images.unsplash.com/photo-1516378513368-228422f9b6a0?q=80&w=300&auto=format",
+      image: "/assets/crops/cotton.jpg",
+      fallbackImage: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f8f9fa'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='24' fill='%23adb5bd'%3ECotton Image%3C/text%3E%3C/svg%3E",
       action: () => navigate("/crop-info")
     },
     {
@@ -85,7 +150,8 @@ const Index = () => {
       hindiName: "गन्ना",
       description: "Perennial crop that's vital for sugar production and byproducts.",
       icon: <Leaf className="h-10 w-10 text-kisan-green dark:text-kisan-gold" />,
-      image: "https://images.unsplash.com/photo-1548368695-a468aea16bfd?q=80&w=300&auto=format",
+      image: "/assets/crops/sugarcane.jpg",
+      fallbackImage: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect width='300' height='200' fill='%23f8f9fa'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='24' fill='%23adb5bd'%3ESugarcane Image%3C/text%3E%3C/svg%3E",
       action: () => navigate("/crop-info")
     }
   ];
@@ -269,10 +335,10 @@ const Index = () => {
                       {language === "हिंदी" ? tool.hindiTitle : tool.title}
                       <button 
                         onClick={() => playInstructions(language === "हिंदी" ? tool.hindiInstructions : tool.instructions)}
-                        className="p-2 bg-kisan-green/10 rounded-full hover:bg-kisan-green/20 transition-colors"
+                        className={`p-2 ${isSpeaking ? 'bg-kisan-green dark:bg-kisan-gold' : 'bg-kisan-green/10 dark:bg-kisan-green/20'} rounded-full hover:bg-kisan-green/20 dark:hover:bg-kisan-green/30 transition-colors`}
                         aria-label="Play voice instructions"
                       >
-                        <Volume2 className="h-5 w-5 text-kisan-green dark:text-kisan-gold" />
+                        <Volume2 className={`h-5 w-5 ${isSpeaking ? 'text-white' : 'text-kisan-green dark:text-kisan-gold'} ${isSpeaking ? 'animate-pulse' : ''}`} />
                       </button>
                     </CardTitle>
                     <CardDescription className="text-gray-600 dark:text-gray-400">
@@ -326,7 +392,13 @@ const Index = () => {
                       <img 
                         src={crop.image} 
                         alt={language === "हिंदी" ? crop.hindiName : crop.name} 
-                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" 
+                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (crop.fallbackImage && target.src !== crop.fallbackImage) {
+                            target.src = crop.fallbackImage;
+                          }
+                        }}
                       />
                     </div>
                     <CardHeader className="p-4">
