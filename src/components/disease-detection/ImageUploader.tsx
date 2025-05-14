@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Camera, Upload, X, RotateCcw, ImageIcon, Eye, Image } from "lucide-react";
+import { Camera, Upload, X, RotateCcw, ImageIcon, Eye, Image, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -16,6 +16,8 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
   const [showCamera, setShowCamera] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [cameraStartTime, setCameraStartTime] = useState(0);
+  const [forceReadyTimer, setForceReadyTimer] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,7 +30,7 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
     const checkMobile = () => {
       const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
       const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-      setIsMobile(isMobileDevice || window.innerWidth < 768); // Also consider smaller screens as mobile
+      setIsMobile(isMobileDevice || window.innerWidth < 768);
     };
 
     checkMobile();
@@ -40,12 +42,26 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
     };
   }, []);
 
+  // Force ready timer
+  useEffect(() => {
+    if (showCamera && cameraStartTime > 0) {
+      const timer = setInterval(() => {
+        const elapsedTime = Math.floor((Date.now() - cameraStartTime) / 1000);
+        setForceReadyTimer(elapsedTime >= 5 ? 5 : elapsedTime);
+      }, 1000);
+      
+      return () => clearInterval(timer);
+    }
+  }, [showCamera, cameraStartTime]);
+
   // Clean up camera stream when component unmounts or camera is closed
   const stopCamera = () => {
     if (cameraStream) {
       cameraStream.getTracks().forEach(track => track.stop());
       setCameraStream(null);
     }
+    setForceReadyTimer(0);
+    setCameraStartTime(0);
   };
 
   useEffect(() => {
@@ -56,22 +72,29 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
 
   const startCamera = async () => {
     try {
-      stopCamera(); // Stop any existing stream
+      stopCamera();
       setCaptureError(null);
+      setCameraStartTime(Date.now());
 
-      // Check if the MediaDevices API is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Camera API is not supported in your browser");
       }
 
+      // Simplified camera constraints
       const constraints = {
-        video: { 
+        video: {
           facingMode: facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          // Very basic constraints for maximum compatibility
+          width: { ideal: 640 },
+          height: { ideal: 480 }
         },
         audio: false
       };
+
+      toast({
+        title: "Accessing Camera",
+        description: "Please allow camera access when prompted",
+      });
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       setCameraStream(stream);
@@ -81,11 +104,7 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
         videoRef.current.srcObject = stream;
         videoRef.current.play().catch(e => {
           console.error("Error playing video:", e);
-          toast({
-            title: "Camera Error",
-            description: "Could not start video preview. Please check your permissions.",
-            variant: "destructive",
-          });
+          setCaptureError("Could not play video stream. Please try uploading an image instead.");
         });
       }
     } catch (error) {
@@ -111,12 +130,19 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
   const switchCamera = () => {
     setFacingMode(prevMode => prevMode === "user" ? "environment" : "user");
     if (showCamera) {
-      startCamera(); // Restart camera with new facing mode
+      startCamera();
     }
   };
 
   const captureImage = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current) {
+      toast({
+        title: "Camera Not Ready",
+        description: "Unable to access camera. Please try again or upload an image.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       setIsCapturing(true);
@@ -128,118 +154,19 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
         throw new Error("Could not create canvas context");
       }
       
-      // Make sure video is playing and has dimensions
-      if (video.videoWidth === 0 || video.videoHeight === 0) {
-        throw new Error("Video stream is not ready yet");
-      }
+      // Super basic approach - just use the element dimensions if needed
+      canvas.width = video.videoWidth || video.clientWidth || 640;
+      canvas.height = video.videoHeight || video.clientHeight || 480;
       
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      // Draw the video frame to the canvas
+      // Draw the video frame to the canvas - this works even if video isn't fully ready on some devices
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       
       // Generate image data URL
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
       
-      // Create a temporary image element to properly load the image
-      const img = new window.Image();
-      img.onload = () => {
-        // Create a fake event that mimics a file input change
-        if (fileInputRef.current) {
-          // Create a temporary file input element to trigger the change
-          const tempFileInput = document.createElement('input');
-          tempFileInput.type = 'file';
-          
-          // Fetch the blob from the data URL
-          fetch(dataUrl)
-            .then(res => res.blob())
-            .then(blob => {
-              // Create a File object from the blob
-              const fileName = `captured-image-${Date.now()}.jpg`;
-              
-              // Use the File constructor with the blob
-              try {
-                const file = new File([blob], fileName, { type: 'image/jpeg' });
-                
-                // Modern browsers support the DataTransfer API
-                if (window.DataTransfer && window.DataTransfer.prototype.items) {
-                  const dataTransfer = new DataTransfer();
-                  dataTransfer.items.add(file);
-                  
-                  if (fileInputRef.current) {
-                    fileInputRef.current.files = dataTransfer.files;
-                    
-                    // Trigger the change event manually
-                    const event = new Event('change', { bubbles: true });
-                    fileInputRef.current.dispatchEvent(event);
-                    
-                    // Also call the handler directly with a synthetic event object
-                    onImageChange({
-                      target: { files: dataTransfer.files },
-                      currentTarget: fileInputRef.current,
-                    } as unknown as React.ChangeEvent<HTMLInputElement>);
-                    
-                    // Close the camera
-                    setShowCamera(false);
-                    toast({
-                      title: "Image Captured",
-                      description: "Image has been successfully captured",
-                      variant: "success",
-                    });
-                  }
-                } else {
-                  // Fallback for browsers that don't support DataTransfer
-                  // Instead of trying to set the files property directly, set the selectedImage URL
-                  onImageChange({
-                    target: { 
-                      // Use a custom property to pass the image data
-                      dataset: { imageUrl: dataUrl },
-                      // Empty files to indicate no real file was selected but we have an image
-                      files: null
-                    },
-                    currentTarget: fileInputRef.current,
-                  } as unknown as React.ChangeEvent<HTMLInputElement>);
-                  
-                  setShowCamera(false);
-                  toast({
-                    title: "Image Captured",
-                    description: "Image has been successfully captured",
-                    variant: "success",
-                  });
-                }
-              } catch (error) {
-                console.error("Error creating file:", error);
-                throw new Error("Failed to create image file");
-              }
-            })
-            .catch(error => {
-              console.error("Error processing captured image:", error);
-              setCaptureError("Failed to process the captured image");
-              toast({
-                title: "Image Capture Failed",
-                description: "Could not process the captured image",
-                variant: "destructive",
-              });
-            })
-            .finally(() => {
-              setIsCapturing(false);
-            });
-        }
-      };
+      // Process the image
+      processImageData(dataUrl);
       
-      img.onerror = () => {
-        setIsCapturing(false);
-        setCaptureError("Failed to load the captured image");
-        toast({
-          title: "Image Capture Failed",
-          description: "Could not load the captured image",
-          variant: "destructive",
-        });
-      };
-      
-      img.src = dataUrl;
     } catch (error) {
       setIsCapturing(false);
       console.error("Error capturing image:", error);
@@ -247,18 +174,73 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
       setCaptureError(errorMessage);
       toast({
         title: "Image Capture Failed",
-        description: `Error: ${errorMessage}`,
+        description: `Error: ${errorMessage}. Try uploading an image instead.`,
         variant: "destructive",
       });
     }
   };
 
+  // Helper to process the image data once captured
+  const processImageData = (dataUrl: string) => {
+    // Create a temporary image element
+    const img = new window.Image();
+    
+    img.onload = () => {
+      // Convert to a File object via Blob
+      fetch(dataUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const fileName = `captured-image-${Date.now()}.jpg`;
+          const file = new File([blob], fileName, { type: 'image/jpeg' });
+          
+          // Create a synthetic event
+          const syntheticEvent = {
+            target: { 
+              files: [file] 
+            },
+            currentTarget: fileInputRef.current,
+          } as unknown as React.ChangeEvent<HTMLInputElement>;
+          
+          // Pass the file to the parent component
+          onImageChange(syntheticEvent);
+          
+          // Close camera and show success
+          setShowCamera(false);
+          toast({
+            title: "Image Captured",
+            description: "Image has been successfully captured",
+            variant: "success",
+          });
+        })
+        .catch(error => {
+          console.error("Error processing image:", error);
+          toast({
+            title: "Processing Failed",
+            description: "Could not process the captured image",
+            variant: "destructive",
+          });
+        })
+        .finally(() => {
+          setIsCapturing(false);
+        });
+    };
+    
+    img.onerror = () => {
+      setIsCapturing(false);
+      toast({
+        title: "Image Error",
+        description: "Could not load the captured image",
+        variant: "destructive",
+      });
+    };
+    
+    img.src = dataUrl;
+  };
+
   const clearImage = () => {
-    // Reset the file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    // Call onImageChange with an empty event to clear the image
     onImageChange({
       target: { files: null }
     } as unknown as React.ChangeEvent<HTMLInputElement>);
@@ -290,14 +272,34 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
             </div>
           ) : (
             <>
-              <video 
-                ref={videoRef} 
-                autoPlay 
-                playsInline 
-                muted 
-                className="max-w-full max-h-[70vh] rounded-lg"
-              />
-              <canvas ref={canvasRef} className="hidden" />
+              <div className="relative w-full max-w-md">
+                {/* Video element */}
+                <video 
+                  ref={videoRef} 
+                  autoPlay 
+                  playsInline 
+                  muted
+                  className="max-w-full max-h-[70vh] rounded-lg mx-auto bg-gray-900"
+                  style={{ minHeight: '200px' }}
+                />
+                
+                {/* Force ready countdown */}
+                {forceReadyTimer > 0 && forceReadyTimer < 5 && (
+                  <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
+                    Ready in {5 - forceReadyTimer}s
+                  </div>
+                )}
+                
+                {/* Show "Force Capture" button after 5 seconds */}
+                {forceReadyTimer >= 5 && (
+                  <div className="absolute top-0 left-0 right-0 bg-green-500/80 text-white text-sm py-1 text-center">
+                    Camera Ready
+                  </div>
+                )}
+                
+                {/* Hidden canvas for image processing */}
+                <canvas ref={canvasRef} className="hidden" />
+              </div>
               
               <div className="absolute bottom-10 left-0 right-0 flex justify-center space-x-4 p-4">
                 <Button
@@ -308,6 +310,7 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
                 >
                   <RotateCcw className="h-6 w-6" />
                 </Button>
+                
                 <Button
                   onClick={captureImage}
                   className="rounded-full p-6 bg-white text-kisan-green hover:bg-gray-200"
@@ -319,6 +322,7 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
                     <div className="h-12 w-12 rounded-full border-2 border-kisan-green"></div>
                   )}
                 </Button>
+                
                 <Button
                   onClick={() => setShowCamera(false)}
                   variant="outline"
@@ -327,6 +331,29 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
                 >
                   <X className="h-6 w-6" />
                 </Button>
+              </div>
+              
+              {/* Upload fallback button */}
+              <div className="absolute bottom-2 left-0 right-0 flex justify-center">
+                <Label
+                  htmlFor="camera-fallback-upload"
+                  className="cursor-pointer flex items-center text-xs text-white/70 hover:text-white"
+                >
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Camera not working? Upload instead
+                  <Input 
+                    id="camera-fallback-upload" 
+                    type="file" 
+                    className="sr-only" 
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        onImageChange(e);
+                        setShowCamera(false);
+                      }
+                    }}
+                    accept="image/*" 
+                  />
+                </Label>
               </div>
             </>
           )}
