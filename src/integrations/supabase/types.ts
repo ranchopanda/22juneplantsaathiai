@@ -17,6 +17,13 @@ export type Database = {
           timestamp: string
           type: string
           user_id: string
+          image_url: string | null
+          crop: string | null
+          disease: string | null
+          severity: string | null
+          confidence: number | null
+          lat: number | null
+          lng: number | null
         }
         Insert: {
           created_at?: string | null
@@ -25,6 +32,13 @@ export type Database = {
           timestamp: string
           type: string
           user_id: string
+          image_url?: string | null
+          crop?: string | null
+          disease?: string | null
+          severity?: string | null
+          confidence?: number | null
+          lat?: number | null
+          lng?: number | null
         }
         Update: {
           created_at?: string | null
@@ -33,6 +47,13 @@ export type Database = {
           timestamp?: string
           type?: string
           user_id?: string
+          image_url?: string | null
+          crop?: string | null
+          disease?: string | null
+          severity?: string | null
+          confidence?: number | null
+          lat?: number | null
+          lng?: number | null
         }
         Relationships: []
       }

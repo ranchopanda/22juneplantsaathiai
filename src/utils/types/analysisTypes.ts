@@ -8,6 +8,7 @@ export interface FarmerContext {
   plantGrowthStage?: string; // "Seedling", "Flowering", "Fruiting"
   recentTreatmentsOrChanges?: string; // "Applied neem oil last week, increased watering 3 days ago"
   previousAnalysisId?: string; // Reference to previous analysis for tracking progression
+  crop?: string; // e.g., "Wheat", "Rice", "Cotton", etc.
   // Add any other relevant questions your chatbot will ask
 }
 

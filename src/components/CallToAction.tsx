@@ -1,6 +1,6 @@
-
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { ArrowRight, Camera } from "lucide-react";
 
 const CallToAction = () => {
   const navigate = useNavigate();
@@ -17,10 +17,12 @@ const CallToAction = () => {
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           <Button 
             size="lg" 
-            className="bg-white text-kisan-green hover:bg-gray-100"
+            className="bg-white text-kisan-green hover:bg-gray-100 shadow-lg transform transition-all duration-300 hover:scale-105 group text-lg"
             onClick={() => navigate("/disease-detection")}
           >
-            Start Using Now
+            <Camera className="mr-2 h-5 w-5" />
+            Try Disease Detection Now
+            <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
           </Button>
           <Button 
             variant="outline"

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Camera, Cloud, Database, Zap } from "lucide-react";
@@ -19,12 +18,12 @@ const HeroSection = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <Button 
-                className="bg-kisan-green hover:bg-kisan-green-dark text-white" 
+                className="bg-kisan-green hover:bg-kisan-green-dark text-white text-lg shadow-lg transform transition-all duration-300 hover:scale-105" 
                 size="lg"
                 onClick={() => navigate("/disease-detection")}
               >
                 <Camera className="mr-2 h-5 w-5" />
-                Detect Plant Disease
+                Detect Disease Now
               </Button>
               <Button 
                 variant="outline" 
@@ -40,9 +39,9 @@ const HeroSection = () => {
           
           <div className="hidden md:block relative">
             <div className="relative h-80 w-full overflow-hidden rounded-xl shadow-xl">
-              <div className="absolute inset-0 bg-gradient-to-br from-kisan-green to-kisan-gold opacity-30 dark:opacity-50 z-10 rounded-xl"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-kisan-green to-kisan-gold opacity-20 dark:opacity-40 z-10 rounded-xl"></div>
               <img 
-                src="https://images.unsplash.com/photo-1523741543316-beb7fc7023d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80" 
+                src="https://images.unsplash.com/photo-1606041008023-472dfb5e530f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2000&q=100" 
                 alt="Indian Farmer in Field"
                 className="w-full h-full object-cover"
               />

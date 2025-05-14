@@ -448,25 +448,25 @@ const Index = () => {
       
       <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-lg md:hidden z-40">
         <div className="flex justify-around items-center p-3">
-          <button onClick={() => navigate("/disease-detection")} className="flex flex-col items-center group">
+          <button onClick={() => navigate("/disease-detection")} className="flex flex-col items-center group p-2 active:bg-gray-100 dark:active:bg-gray-700 rounded-lg touch-action-manipulation">
             <Camera className="h-6 w-6 text-kisan-green dark:text-kisan-gold transition-transform group-active:scale-90" />
             <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
               {language === "हिंदी" ? "रोग पहचानें" : "Diseases"}
             </span>
           </button>
-          <button onClick={() => navigate("/weather")} className="flex flex-col items-center group">
+          <button onClick={() => navigate("/weather")} className="flex flex-col items-center group p-2 active:bg-gray-100 dark:active:bg-gray-700 rounded-lg touch-action-manipulation">
             <CloudRain className="h-6 w-6 text-kisan-green dark:text-kisan-gold transition-transform group-active:scale-90" />
             <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
               {language === "हिंदी" ? "मौसम" : "Weather"}
             </span>
           </button>
-          <button onClick={() => navigate("/soil-analysis")} className="flex flex-col items-center group">
+          <button onClick={() => navigate("/soil-analysis")} className="flex flex-col items-center group p-2 active:bg-gray-100 dark:active:bg-gray-700 rounded-lg touch-action-manipulation">
             <Map className="h-6 w-6 text-kisan-green dark:text-kisan-gold transition-transform group-active:scale-90" />
             <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
               {language === "हिंदी" ? "मिट्टी जांच" : "Soil"}
             </span>
           </button>
-          <button onClick={() => navigate("/crop-info")} className="flex flex-col items-center group">
+          <button onClick={() => navigate("/crop-info")} className="flex flex-col items-center group p-2 active:bg-gray-100 dark:active:bg-gray-700 rounded-lg touch-action-manipulation">
             <Wheat className="h-6 w-6 text-kisan-green dark:text-kisan-gold transition-transform group-active:scale-90" />
             <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
               {language === "हिंदी" ? "फसल जानकारी" : "Crops"}

@@ -4,12 +4,13 @@ import { AnalysisData, FarmerContext } from "@/utils/types/analysisTypes";
 import { imageToBase64 } from "@/utils/geminiAI";
 import { analyzePlantDisease, analyzeWithAdvancedModel } from "@/utils/services/analysis/plantDiseaseAnalysis";
 import { storeAnalysisData } from "@/utils/storage/analysisStorage";
-import { saveFarmSnapshot } from "@/utils/farmDataSnapshots";
+import { saveFarmSnapshot, createStructuredData } from "@/utils/farmDataSnapshots";
 import { useToast } from "@/hooks/use-toast";
 
 export const useDiseasePrediction = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [base64Image, setBase64Image] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [detectionResult, setDetectionResult] = useState<DetectionResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [previousAnalysisData, setPreviousAnalysisData] = useState<AnalysisData | null>(null);
@@ -20,6 +21,7 @@ export const useDiseasePrediction = () => {
   const handleImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setImageFile(file); // Store the file for later upload
       setSelectedImage(URL.createObjectURL(file));
       try {
         const base64 = await imageToBase64(file);
@@ -211,18 +213,27 @@ export const useDiseasePrediction = () => {
       try {
         const analysisId = await storeAnalysisData(analysisData, "plant_disease");
 
+        // Create structured data for the snapshot
+        const structuredData = createStructuredData(analysisData, "plant_disease");
+        
+        // Add crop information from context if available
+        if (currentContext.crop) {
+          structuredData.crop = currentContext.crop;
+        }
+
         // Use try-catch to prevent error in saveFarmSnapshot from breaking the main flow
         try {
           await saveFarmSnapshot({
-            user_id: "anonymous",
+            user_id: "anonymous", // In a real app, use authenticated user ID
             type: "plant_disease",
             timestamp: new Date().toISOString(),
             data: {
               ...analysisData,
               analysisId,
-              farmerContext: currentContext // Store the farmer context with the snapshot
+              farmerContext: currentContext,
+              structuredData // Add the structured data
             }
-          });
+          }, imageFile || undefined); // Pass the image file for upload
         } catch (snapshotError) {
           console.warn("Failed to save farm snapshot, but analysis is complete:", snapshotError);
           // Continue with successful analysis even if snapshot saving fails
@@ -263,16 +274,16 @@ export const useDiseasePrediction = () => {
 
   // Handle feedback when user is unsatisfied with the result
   const handleRequestBetterAnalysis = async (contextData: Partial<FarmerContext> = {}) => {
-    if (!base64Image) {
+    if (!previousAnalysisData || !base64Image) {
       toast({
-        title: "No Image Available",
-        description: "Cannot improve analysis without an image.",
+        title: "Cannot Enhance Analysis",
+        description: "No previous analysis data available to improve upon.",
         variant: "destructive",
       });
       return;
     }
 
-    // Update farmer context with any new data provided
+    // Update farmer context
     if (Object.keys(contextData).length > 0) {
       updateFarmerContext(contextData);
     }
@@ -280,73 +291,70 @@ export const useDiseasePrediction = () => {
     setLoading(true);
     setIsAdvancedAnalysis(true);
     
-    toast({
-      title: "Using Advanced Model",
-      description: "Analyzing with Gemini 2.0 Flash for better accuracy...",
-    });
-
     try {
-      // Use the current farmerContext state combined with any new context data
+      // Combine existing context with any new data
       const currentContext: FarmerContext = { ...farmerContext, ...contextData };
       
-      const enhancedAnalysis: AnalysisData = await analyzeWithAdvancedModel(
-        base64Image, 
+      // Get enhanced analysis using the advanced model
+      const enhancedAnalysisData: AnalysisData = await analyzeWithAdvancedModel(
+        base64Image,
         previousAnalysisData,
         currentContext
       );
       
-      // Store the previous analysis data
-      setPreviousAnalysisData(enhancedAnalysis);
+      setPreviousAnalysisData(enhancedAnalysisData);
       
-      const mappedResult = mapToDetectionResult(enhancedAnalysis);
+      const mappedResult = mapToDetectionResult(enhancedAnalysisData);
       setDetectionResult(mappedResult);
 
       try {
-        const analysisId = await storeAnalysisData(enhancedAnalysis, "plant_disease_enhanced");
+        const analysisId = await storeAnalysisData(
+          enhancedAnalysisData,
+          "plant_disease_enhanced"
+        );
 
-        // Use try-catch to prevent error in saveFarmSnapshot from breaking the main flow
+        // Create structured data with type 'plant_disease_enhanced'
+        const structuredData = createStructuredData(enhancedAnalysisData, "plant_disease_enhanced");
+        
+        // Add crop information from context if available
+        if (currentContext.crop) {
+          structuredData.crop = currentContext.crop;
+        }
+
         try {
           await saveFarmSnapshot({
-            user_id: "anonymous",
+            user_id: "anonymous", // In a real app, use authenticated user ID
             type: "plant_disease_enhanced",
             timestamp: new Date().toISOString(),
             data: {
-              ...enhancedAnalysis,
+              ...enhancedAnalysisData,
               analysisId,
-              isAdvancedAnalysis: true,
-              farmerContext: currentContext // Store the farmer context with the snapshot
+              farmerContext: currentContext,
+              structuredData // Add the structured data
             }
-          });
+          }, imageFile || undefined); // Pass the image file for upload
         } catch (snapshotError) {
-          console.warn("Failed to save farm snapshot, but enhanced analysis is complete:", snapshotError);
-          // Continue with successful analysis even if snapshot saving fails
+          console.warn(
+            "Failed to save enhanced farm snapshot, but analysis is complete:",
+            snapshotError
+          );
         }
       } catch (storageError) {
         console.warn("Failed to store enhanced analysis data, but proceeding with UI display:", storageError);
-        // The analysis was successful, so we still want to display the results
       }
 
       toast({
         title: "Enhanced Analysis Complete",
-        description: `Gemini 2.0 Flash detected: ${mappedResult.disease_name} (${mappedResult.confidence}% confidence)`,
+        description: `Detailed analysis of ${mappedResult.disease_name} with additional insights.`,
       });
     } catch (error) {
-      console.error("Advanced detection error:", error);
-      
-      if (previousAnalysisData) {
-        toast({
-          title: "Advanced Analysis Partially Complete",
-          description: "There was an issue with the advanced analysis, but some results are available.",
-          variant: "destructive",
-        });
-        // We already have the previous results displayed, so no need to update
-      } else {
-        toast({
-          title: "Analysis Failed",
-          description: "The analysis could not be completed. Please try again later.",
-          variant: "destructive",
-        });
-      }
+      console.error("Enhanced disease analysis error:", error);
+      toast({
+        title: "Enhanced Analysis Failed",
+        description: "Could not perform detailed analysis. Using previous results.",
+        variant: "destructive",
+      });
+      // Keep showing the previous analysis results
     } finally {
       setLoading(false);
     }
@@ -359,8 +367,8 @@ export const useDiseasePrediction = () => {
     isAdvancedAnalysis,
     farmerContext,
     handleImageChange,
+    updateFarmerContext,
     handleAnalysis,
     handleRequestBetterAnalysis,
-    updateFarmerContext
   };
 };

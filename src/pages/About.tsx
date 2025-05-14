@@ -1,8 +1,6 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
-import { GitIntegrationDemo } from "@/components/GitIntegrationDemo";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,11 +41,34 @@ const About = () => {
                   Our Mission
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">
-                  Kisan Krishi Dost AI was created with a clear mission: to empower Indian farmers with AI-powered tools that make modern agricultural knowledge accessible to everyone, regardless of literacy level or technical expertise.
+                  Kisan Krishi Dost AI was created with a clear mission: to empower Indian farmers with AI-powered tools that make modern agricultural knowledge accessible to everyone.
                 </p>
-                <p className="text-gray-600 dark:text-gray-300">
-                  We aim to bridge the gap between advanced agricultural science and everyday farming practices, helping to increase productivity, reduce crop losses, and improve livelihoods for millions of farmers across India.
-                </p>
+                <ul className="space-y-3 text-gray-600 dark:text-gray-300 list-none">
+                  <li className="flex items-start">
+                    <div className="h-5 w-5 mt-0.5 mr-2 rounded-full bg-kisan-green flex items-center justify-center flex-shrink-0">
+                      <div className="h-2 w-2 rounded-full bg-white"></div>
+                    </div>
+                    <span><strong>Reduce crop losses</strong> through early disease detection and prevention</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="h-5 w-5 mt-0.5 mr-2 rounded-full bg-kisan-green flex items-center justify-center flex-shrink-0">
+                      <div className="h-2 w-2 rounded-full bg-white"></div>
+                    </div>
+                    <span><strong>Boost yields</strong> with personalized crop management recommendations</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="h-5 w-5 mt-0.5 mr-2 rounded-full bg-kisan-green flex items-center justify-center flex-shrink-0">
+                      <div className="h-2 w-2 rounded-full bg-white"></div>
+                    </div>
+                    <span><strong>Access expert advice</strong> in your language, even with limited literacy</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="h-5 w-5 mt-0.5 mr-2 rounded-full bg-kisan-green flex items-center justify-center flex-shrink-0">
+                      <div className="h-2 w-2 rounded-full bg-white"></div>
+                    </div>
+                    <span><strong>Make data-driven decisions</strong> for sustainable and profitable farming</span>
+                  </li>
+                </ul>
               </div>
               
               <div className="relative rounded-lg overflow-hidden h-64 md:h-auto">
@@ -135,12 +156,21 @@ const About = () => {
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card>
+              <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl">
+                <div className="h-40 bg-green-50 dark:bg-green-900/20 overflow-hidden relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1590682680695-43b964a3ae17?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                    alt="Farmer taking photo of crop"
+                    className="w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-90"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-kisan-green text-white flex items-center justify-center">
+                      <span className="text-2xl font-bold">1</span>
+                    </div>
+                  </div>
+                </div>
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-kisan-green text-white flex items-center justify-center mb-4">
-                      <span className="text-xl font-bold">1</span>
-                    </div>
                     <h3 className="text-lg font-semibold mb-2">Upload or Capture</h3>
                     <p className="text-gray-600 dark:text-gray-300 text-sm">
                       Take a picture of your crop using your smartphone camera or upload an existing photo.
@@ -149,12 +179,21 @@ const About = () => {
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl">
+                <div className="h-40 bg-blue-50 dark:bg-blue-900/20 overflow-hidden relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                    alt="AI analyzing image"
+                    className="w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-90"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-kisan-green text-white flex items-center justify-center">
+                      <span className="text-2xl font-bold">2</span>
+                    </div>
+                  </div>
+                </div>
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-kisan-green text-white flex items-center justify-center mb-4">
-                      <span className="text-xl font-bold">2</span>
-                    </div>
                     <h3 className="text-lg font-semibold mb-2">AI Analysis</h3>
                     <p className="text-gray-600 dark:text-gray-300 text-sm">
                       Our AI instantly analyzes the image to identify diseases, nutrient deficiencies, or pests.
@@ -163,12 +202,21 @@ const About = () => {
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl">
+                <div className="h-40 bg-amber-50 dark:bg-amber-900/20 overflow-hidden relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1586282391848-2bc7ff2412d1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                    alt="Farmer receiving recommendations"
+                    className="w-full h-full object-cover mix-blend-multiply dark:mix-blend-normal opacity-90"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-kisan-green text-white flex items-center justify-center">
+                      <span className="text-2xl font-bold">3</span>
+                    </div>
+                  </div>
+                </div>
                 <CardContent className="p-6">
                   <div className="flex flex-col items-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-kisan-green text-white flex items-center justify-center mb-4">
-                      <span className="text-xl font-bold">3</span>
-                    </div>
                     <h3 className="text-lg font-semibold mb-2">Get Recommendations</h3>
                     <p className="text-gray-600 dark:text-gray-300 text-sm">
                       Receive detailed treatment recommendations, preventive measures, and government scheme information.
@@ -198,7 +246,7 @@ const About = () => {
                   </li>
                   <li className="flex">
                     <div className="h-2 w-2 mt-2 rounded-full bg-kisan-green dark:bg-kisan-gold mr-2 flex-shrink-0"></div>
-                    <span className="text-gray-600 dark:text-gray-300">Offline functionality for core features</span>
+                    <span className="text-gray-600 dark:text-gray-300">Fast disease detection within seconds</span>
                   </li>
                 </ul>
               </div>
@@ -258,7 +306,7 @@ const About = () => {
                   Do I need an internet connection to use the app?
                 </AccordionTrigger>
                 <AccordionContent>
-                  While an internet connection provides the best experience, many core features work offline. The disease detection model can be downloaded for offline use (requires 200MB storage). Weather forecasts and market prices require an internet connection to update.
+                  An internet connection is required to use the app's features. We've optimized the app to work well even on low-bandwidth connections typically found in rural areas. Some features like disease detection use efficient AI models that require minimal data transfer.
                 </AccordionContent>
               </AccordionItem>
               
@@ -283,9 +331,6 @@ const About = () => {
           </section>
           
           <section className="mb-16">
-            <div className="mb-8">
-              <GitIntegrationDemo />
-            </div>
             <div className="bg-kisan-green text-white rounded-lg p-8 text-center">
               <HelpCircle className="h-12 w-12 mx-auto mb-4" />
               <h2 className="text-2xl font-bold mb-4">Need Help?</h2>
