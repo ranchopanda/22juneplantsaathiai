@@ -5,7 +5,7 @@ import { API_KEYS, SAFETY_SETTINGS as CONFIG_SAFETY_SETTINGS } from "../config/g
 const getApiKey = (): string => {
   const validKey = API_KEYS.find(key => key && key.length > 0);
   if (!validKey) {
-    throw new Error("No valid Gemini API key found in configuration.");
+    throw new Error("No valid AgriAI API key found in configuration.");
   }
   return validKey;
 };
@@ -56,7 +56,9 @@ const makeRequestWithRetries = async (
     try {
       // For the last attempt, try the fallback model
       if (attempt === maxRetries - 1 && currentEndpoint === API_ENDPOINTS.primary) {
-        console.log("Trying fallback model for final attempt...");
+        if (process.env.NODE_ENV === "development") {
+          console.log("Trying fallback model for final attempt...");
+        }
         currentEndpoint = API_ENDPOINTS.fallback;
       }
 
@@ -64,7 +66,9 @@ const makeRequestWithRetries = async (
       const apiKey = getApiKey();
       const requestUrl = `${currentEndpoint}?key=${apiKey}`;
       
-      console.log(`API request attempt ${attempt + 1}/${maxRetries} to ${currentEndpoint.includes("gemini-2.0") ? "gemini-2.0-flash" : "gemini-1.5-flash"}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`API request attempt ${attempt + 1}/${maxRetries} to AI analysis engine`);
+      }
       
       const response = await fetch(requestUrl, {
         method: "POST",
@@ -76,7 +80,10 @@ const makeRequestWithRetries = async (
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error(`Attempt ${attempt + 1} failed with status ${response.status}:`, errorData);
+        if (process.env.NODE_ENV === "development") {
+          console.error(`Attempt ${attempt + 1} failed with status ${response.status}:`,
+            typeof errorData === 'object' ? JSON.stringify(errorData, null, 2) : errorData);
+        }
         
         // Check for rate limit or overload conditions
         const isOverloaded = 
@@ -88,12 +95,14 @@ const makeRequestWithRetries = async (
         if (isOverloaded && attempt < maxRetries - 1) {
           // Calculate backoff delay with exponential increase
           const backoffDelay = initialDelay * Math.pow(2, attempt);
-          console.log(`Service overloaded. Retrying in ${backoffDelay/1000} seconds...`);
+          if (process.env.NODE_ENV === "development") {
+            console.log(`Service overloaded. Retrying in ${backoffDelay/1000} seconds...`);
+          }
           await sleep(backoffDelay);
           continue;
         }
         
-        // Get more specific error message from Gemini response
+        // Get more specific error message from AgriAI response
         const errorMessage = errorData.error?.message || `API request failed with status ${response.status}`;
         throw new Error(errorMessage);
       }
@@ -110,7 +119,9 @@ const makeRequestWithRetries = async (
            error.message.includes("quota")) && 
           attempt < maxRetries - 1) {
         const backoffDelay = initialDelay * Math.pow(2, attempt);
-        console.log(`Error: ${error.message}. Retrying in ${backoffDelay/1000} seconds...`);
+        if (process.env.NODE_ENV === "development") {
+          console.log(`Error: ${error.message}. Retrying in ${backoffDelay/1000} seconds...`);
+        }
         await sleep(backoffDelay);
         continue;
       }
@@ -214,8 +225,11 @@ Image: [Attached Below]
     );
 
     if (!responseData.candidates || !responseData.candidates[0].content || !responseData.candidates[0].content.parts || !responseData.candidates[0].content.parts[0].text) {
-      console.error("Unexpected API response structure for quick analysis:", responseData);
-      throw new Error("Failed to extract text from Gemini API response for quick analysis.");
+      if (process.env.NODE_ENV === "development") {
+        console.error("Unexpected API response structure for quick analysis:",
+          typeof responseData === 'object' ? JSON.stringify(responseData, null, 2) : responseData);
+      }
+      throw new Error("Failed to extract text from AI analysis engine response for quick analysis.");
     }
 
     let rawText = responseData.candidates[0].content.parts[0].text;
@@ -321,9 +335,9 @@ Image: [Attached Below]
   } catch (error) {
     console.error(`Failed to get quick analysis:`, error);
     if (error instanceof Error) {
-      throw new Error(`Failed to get quick analysis with Gemini API: ${error.message}`);
+      throw new Error(`Failed to get quick analysis with AI analysis engine API: ${error.message}`);
     }
-    throw new Error("Failed to get quick analysis with Gemini API due to an unknown error.");
+    throw new Error("Failed to get quick analysis with AI analysis engine API due to an unknown error.");
   }
 };
 
@@ -512,7 +526,13 @@ const trackDiseaseProgression = async (
     
     return progressionTracking;
   } catch (error) {
-    console.error('Error tracking disease progression:', error);
+    if (process.env.NODE_ENV === "development") {
+      if (error instanceof Error) {
+        console.error('Error tracking disease progression:', error.message);
+      } else {
+        console.error('Error tracking disease progression:', JSON.stringify(error, null, 2));
+      }
+    }
     return {
       previousAnalysisId,
       changeSinceLastAnalysis: 'unknown',
@@ -659,13 +679,16 @@ Image: [Attached Below]
 
     // Handle potential API response variations - ensure we get text to parse
     if (!responseData.candidates || !responseData.candidates[0].content || !responseData.candidates[0].content.parts || !responseData.candidates[0].content.parts[0].text) {
-        console.error("Unexpected API response structure:", responseData);
-        throw new Error("Failed to extract text from Gemini API response.");
+        if (process.env.NODE_ENV === "development") {
+          console.error("Unexpected API response structure:",
+            typeof responseData === 'object' ? JSON.stringify(responseData, null, 2) : responseData);
+        }
+        throw new Error("Failed to extract text from AI analysis engine response.");
     }
       
     let rawText = responseData.candidates[0].content.parts[0].text;
 
-    // Gemini might wrap JSON in ```json ... ```, so strip it.
+    // AI might wrap JSON in ```json ... ```, so strip it.
     rawText = rawText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
     
     // Parse the JSON response directly
@@ -673,8 +696,13 @@ Image: [Attached Below]
     try {
       parsedResult = JSON.parse(rawText);
     } catch (jsonError) {
-      console.error("Failed to parse JSON response:", jsonError);
-      console.log("Raw text received:", rawText);
+      if (process.env.NODE_ENV === "development") {
+        if (jsonError instanceof Error) {
+          console.error("Failed to parse JSON response:", jsonError.message);
+        } else {
+          console.error("Failed to parse JSON response:", JSON.stringify(jsonError, null, 2));
+        }
+      }
       
       // Attempt to extract a JSON object if it exists within the text
       const jsonMatch = rawText.match(/\{[\s\S]*\}/);
@@ -682,11 +710,17 @@ Image: [Attached Below]
         try {
           parsedResult = JSON.parse(jsonMatch[0]);
         } catch (secondJsonError) {
-          console.error("Failed to parse extracted JSON:", secondJsonError);
-          throw new Error("Failed to parse Gemini response as JSON.");
+          if (process.env.NODE_ENV === "development") {
+            if (secondJsonError instanceof Error) {
+              console.error("Failed to parse extracted JSON:", secondJsonError.message);
+            } else {
+              console.error("Failed to parse extracted JSON:", JSON.stringify(secondJsonError, null, 2));
+            }
+          }
+          throw new Error("Failed to parse AI analysis engine response as JSON.");
         }
       } else {
-        throw new Error("Failed to parse Gemini response as JSON.");
+        throw new Error("Failed to parse AI analysis engine response as JSON.");
       }
     }
 
@@ -914,12 +948,18 @@ Image: [Attached Below]
     return analysisResult;
 
   } catch (error) {
-    console.error(`Failed to analyze image:`, error);
+    if (process.env.NODE_ENV === "development") {
+      if (error instanceof Error) {
+        console.error(`Failed to analyze image:`, error.message);
+      } else {
+        console.error(`Failed to analyze image:`, JSON.stringify(error, null, 2));
+      }
+    }
     // Be more specific about the error passed upwards
     if (error instanceof Error) {
-        throw new Error(`Failed to analyze image with Gemini API: ${error.message}`);
+        throw new Error(`Failed to analyze image with AI analysis engine API: ${error.message}`);
     }
-    throw new Error("Failed to analyze image with Gemini API due to an unknown error.");
+    throw new Error("Failed to analyze image with AI analysis engine API due to an unknown error.");
   }
 };
 
@@ -1326,3 +1366,8 @@ export const compareAnalyses = (
   // Return the completed comparison
   return result;
 };
+
+// --- Named exports for compatibility with the rest of the app ---
+export { analyzeWithGemini as analyzePlantDisease };
+export { getQuickAnalysisFromGemini as getQuickPlantAnalysis };
+// Add more exports here as you implement more AI features (e.g., analyzeSoil, predictYield, etc.)

@@ -149,7 +149,13 @@ export const analyzeSoil = async (
         location_context: locationContext
       };
     } catch (error) {
-      console.error("Error parsing soil analysis response:", error);
+      if (process.env.NODE_ENV === "development") {
+        if (error instanceof Error) {
+          console.error("Error parsing soil analysis response:", error.message);
+        } else {
+          console.error("Error parsing soil analysis response:", JSON.stringify(error, null, 2));
+        }
+      }
       throw new Error("Failed to analyze soil image");
     }
   }, FALLBACK_RESULT);

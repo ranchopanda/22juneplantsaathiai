@@ -44,13 +44,25 @@ export const tryWithApiKeys = async <T>(
           continue;
         }
         
-        console.error(`API key attempt failed (attempt ${attempt + 1}):`, apiError);
+        if (process.env.NODE_ENV === "development") {
+          if (apiError instanceof Error) {
+            console.error(`API key attempt failed (attempt ${attempt + 1}):`, apiError.message);
+          } else {
+            console.error(`API key attempt failed (attempt ${attempt + 1}):`, JSON.stringify(apiError, null, 2));
+          }
+        }
         lastError = apiError;
         break; // Move to next API key
       }
     }
   }
   
-  console.error("All API keys failed:", lastError);
+  if (process.env.NODE_ENV === "development") {
+    if (lastError instanceof Error) {
+      console.error("All API keys failed:", lastError.message);
+    } else {
+      console.error("All API keys failed:", JSON.stringify(lastError, null, 2));
+    }
+  }
   return fallback;
 };

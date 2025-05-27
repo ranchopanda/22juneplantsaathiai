@@ -90,7 +90,13 @@ const Weather = () => {
             
             await fetchWeatherData(locationName, 28.6139, 77.2090);
           } catch (error) {
-            console.error("Error getting location:", error);
+            if (process.env.NODE_ENV === "development") {
+              if (error instanceof Error) {
+                console.error("Error getting location:", error.message);
+              } else {
+                console.error("Error getting location:", JSON.stringify(error, null, 2));
+              }
+            }
             setLoading(false);
             toast({
               title: "Location Error",
@@ -102,7 +108,13 @@ const Weather = () => {
         (error) => {
           clearTimeout(locationTimeout);
           setLoading(false);
-          console.error("Error getting location:", error);
+          if (process.env.NODE_ENV === "development") {
+            if (error instanceof Error) {
+              console.error("Error getting location:", error.message);
+            } else {
+              console.error("Error getting location:", JSON.stringify(error, null, 2));
+            }
+          }
           
           const mockCity = "New Delhi";
           setLocation(mockCity);
@@ -162,7 +174,13 @@ const Weather = () => {
         throw new Error('Location not found');
       }
     } catch (error) {
-      console.error("Error fetching coordinates:", error);
+      if (process.env.NODE_ENV === "development") {
+        if (error instanceof Error) {
+          console.error("Error fetching coordinates:", error.message);
+        } else {
+          console.error("Error fetching coordinates:", JSON.stringify(error, null, 2));
+        }
+      }
       setLoading(false);
       toast({
         title: "Search Error",
@@ -253,7 +271,13 @@ const Weather = () => {
       
       setWeatherData(mockWeatherData);
     } catch (error) {
-      console.error("Error fetching weather data:", error);
+      if (process.env.NODE_ENV === "development") {
+        if (error instanceof Error) {
+          console.error("Error fetching weather data:", error.message);
+        } else {
+          console.error("Error fetching weather data:", JSON.stringify(error, null, 2));
+        }
+      }
       toast({
         title: "Weather Error",
         description: "Could not retrieve weather data. Please try again later.",

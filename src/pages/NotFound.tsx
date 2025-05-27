@@ -1,4 +1,3 @@
-
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -9,10 +8,12 @@ const NotFound = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
+    if (process.env.NODE_ENV === "development") {
+      console.error(
+        "404 Error: User attempted to access non-existent route:",
+        typeof location.pathname === 'object' ? JSON.stringify(location.pathname, null, 2) : location.pathname
+      );
+    }
   }, [location.pathname]);
 
   return (

@@ -11,13 +11,13 @@ interface Message {
   content: string;
 }
 
-interface GeminiChatbotProps {
+interface AgriAIChatbotProps {
   language: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-const GeminiChatbot = ({ language, isOpen, onClose }: GeminiChatbotProps) => {
+const AgriAIChatbot = ({ language, isOpen, onClose }: AgriAIChatbotProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -45,7 +45,7 @@ const GeminiChatbot = ({ language, isOpen, onClose }: GeminiChatbotProps) => {
     setInputValue('');
     setIsLoading(true);
     
-    // In a real implementation, this would call the Gemini API
+    // In a real implementation, this would call the AI backend
     // For now, we'll simulate a response
     setTimeout(() => {
       const farmingResponses = {
@@ -184,4 +184,4 @@ const GeminiChatbot = ({ language, isOpen, onClose }: GeminiChatbotProps) => {
   );
 };
 
-export default GeminiChatbot; 
+export default AgriAIChatbot; 

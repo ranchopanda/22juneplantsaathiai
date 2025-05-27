@@ -15,10 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { isMobileDevice } from "@/utils/cameraUtils";
-import { 
-  analyzeSoil, 
-  getAnalysisHistory 
-} from "@/utils/geminiAI";
+import { getAnalysisHistory } from "@/utils/geminiAI";
+import { analyzeSoil } from "@/utils/services/analysis/soilAnalysis";
 import { saveFarmSnapshot, getFarmSnapshots } from "@/utils/farmDataSnapshots";
 
 // Define types that were imported from missing modules
@@ -50,9 +48,8 @@ interface FarmDataSnapshot {
 
 // Placeholder functions for missing modules
 const getSoilAnalysis = async (image: File): Promise<SoilAnalysisResult> => {
-  // In a real implementation, this would call an API
-  // For now, we'll just use the analyzeSoil function
-  return await analyzeSoil(image);
+  // Placeholder: return a mock result or throw an error
+  throw new Error("Soil analysis is not implemented yet.");
 };
 
 const saveToFarmHistory = async (data: any): Promise<void> => {
@@ -97,7 +94,13 @@ const SoilAnalysis = () => {
         const history = await getFarmSnapshots("soil_analysis");
         setSnapshots(history);
       } catch (error) {
-        console.error("Error loading snapshots:", error);
+        if (process.env.NODE_ENV === "development") {
+          if (error instanceof Error) {
+            console.error("Error loading snapshots:", error.message);
+          } else {
+            console.error("Error loading snapshots:", JSON.stringify(error, null, 2));
+          }
+        }
       } finally {
         setLoadingSnapshots(false);
       }
@@ -152,58 +155,48 @@ const SoilAnalysis = () => {
       });
       return;
     }
-    
     setLoading(true);
-    
     try {
-      const base64Image = await imageToBase64(image);
-      
-      // Pass location context if provided
-      const analysisResult = await analyzeSoil(
-        base64Image, 
-        locationInput || undefined
-      );
-      
-      setResult(analysisResult);
-      
-      await storeAnalysisData(analysisResult, "soil_analysis");
-      
-      // Show image quality feedback if available
-      if (analysisResult.image_quality_score !== undefined) {
-        const quality = analysisResult.image_quality_score;
-        
-        if (quality < 50) {
+      // Convert image to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64Image = (reader.result as string).split(",")[1];
+          const analysisResult = await analyzeSoil(base64Image, locationInput || undefined);
+          setResult(analysisResult);
+        } catch (error: unknown) {
+          if (process.env.NODE_ENV === "development") {
+            if (error instanceof Error) {
+              console.error("Error analyzing image:", error.message);
+            } else {
+              console.error("Error analyzing image:", JSON.stringify(error, null, 2));
+            }
+          }
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          let errorDescription = "There was an error analyzing the soil image.";
+          if (errorMessage.includes("denied") || errorMessage.includes("permission")) {
+            errorDescription = "API access denied. Please check your API keys.";
+          } else if (errorMessage.includes("JSON") || errorMessage.includes("format")) {
+            errorDescription = "Received invalid analysis results. Please try again.";
+          } else if (errorMessage.includes("clearer")) {
+            errorDescription = "Image quality too low. Please try with a clearer, well-lit photo.";
+          }
           toast({
-            title: "Image Quality Warning",
-            description: "The image quality is low. For better results, try with better lighting and focus.",
+            title: "Analysis Failed",
+            description: errorDescription,
             variant: "destructive",
+            action: (
+              <Button variant="ghost" size="sm" onClick={analyzeImage}>
+                Retry
+              </Button>
+            )
           });
+        } finally {
+          setLoading(false);
         }
-      }
-      
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error("Error analyzing image:", error);
-      let errorDescription = "There was an error analyzing the soil image.";
-      if (errorMessage.includes("denied") || errorMessage.includes("permission")) {
-        errorDescription = "API access denied. Please check your API keys.";
-      } else if (errorMessage.includes("JSON") || errorMessage.includes("format")) {
-        errorDescription = "Received invalid analysis results. Please try again.";
-      } else if (errorMessage.includes("clearer")) {
-        errorDescription = "Image quality too low. Please try with a clearer, well-lit photo.";
-      }
-      
-      toast({
-        title: "Analysis Failed",
-        description: errorDescription,
-        variant: "destructive",
-        action: (
-          <Button variant="ghost" size="sm" onClick={analyzeImage}>
-            Retry
-          </Button>
-        )
-      });
-    } finally {
+      };
+      reader.readAsDataURL(image);
+    } catch (error) {
       setLoading(false);
     }
   };

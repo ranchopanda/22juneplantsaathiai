@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { handleGitPushWithFallback } from '../utils/gitWithGemini';
 import { GitErrorAnalysisResult } from '../utils/services/geminiAIService';
@@ -23,7 +22,7 @@ export const GitIntegrationDemo = () => {
 
   return (
     <div className="p-4 border rounded-lg">
-      <h2 className="text-xl font-bold mb-4">Git Push with Gemini Fallback</h2>
+      <h2 className="text-xl font-bold mb-4">Git Push with AI Fallback</h2>
       <button
         onClick={handlePush}
         disabled={isPushing}

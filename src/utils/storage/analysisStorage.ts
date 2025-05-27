@@ -1,4 +1,3 @@
-
 import { AnalysisData } from '../types/analysisTypes';
 
 export const storeAnalysisData = (data: any, type: string) => {

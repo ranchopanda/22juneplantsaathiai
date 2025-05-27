@@ -54,7 +54,13 @@ const YieldPrediction = () => {
           setAvailableDiseaseOptions(newOptions);
           setDisease("none");
         } catch (error) {
-          console.error("Error fetching diseases for crop:", error);
+          if (process.env.NODE_ENV === "development") {
+            if (error instanceof Error) {
+              console.error("Error fetching diseases for crop:", error.message);
+            } else {
+              console.error("Error fetching diseases for crop:", JSON.stringify(error, null, 2));
+            }
+          }
           setAvailableDiseaseOptions([{ value: "none", label: "No Disease" }]);
           setDisease("none");
         }
@@ -83,7 +89,13 @@ const YieldPrediction = () => {
         description: `Detected ${data.location.district}, ${data.location.state}. Weather data loaded.`,
       });
     } catch (error) {
-      console.error("Failed to fetch weather data:", error);
+      if (process.env.NODE_ENV === "development") {
+        if (error instanceof Error) {
+          console.error("Failed to fetch weather data:", error.message);
+        } else {
+          console.error("Failed to fetch weather data:", JSON.stringify(error, null, 2));
+        }
+      }
       setWeatherError("Failed to detect your location. Using default weather data.");
       toast({
         title: "Weather Data Error",
@@ -158,7 +170,13 @@ const YieldPrediction = () => {
         description: `Predicted yield: ${result.predictedYield} ${result.yieldUnit}`,
       });
     } catch (error) {
-      console.error("Error in yield prediction:", error);
+      if (process.env.NODE_ENV === "development") {
+        if (error instanceof Error) {
+          console.error("Error in yield prediction:", error.message);
+        } else {
+          console.error("Error in yield prediction:", JSON.stringify(error, null, 2));
+        }
+      }
       toast({
         title: "Prediction Failed",
         description: "There was an error generating the yield prediction.",

@@ -27,7 +27,13 @@ export const detectPlantDisease = async (
     const result = await analyzePlantDisease(base64Image);
     return result;
   } catch (error) {
-    console.error("Error in plant disease detection:", error);
+    if (process.env.NODE_ENV === "development") {
+      if (error instanceof Error) {
+        console.error("Error in plant disease detection:", error.message);
+      } else {
+        console.error("Error in plant disease detection:", JSON.stringify(error, null, 2));
+      }
+    }
     throw error;
   }
 }; 

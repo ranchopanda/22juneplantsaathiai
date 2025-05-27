@@ -44,7 +44,13 @@ export const uploadImageToStorage = async (
       });
     
     if (error) {
-      console.error('Error uploading file:', error);
+      if (process.env.NODE_ENV === "development") {
+        if (error instanceof Error) {
+          console.error('Error uploading file:', error.message);
+        } else {
+          console.error('Error uploading file:', JSON.stringify(error, null, 2));
+        }
+      }
       throw error;
     }
     
@@ -55,7 +61,13 @@ export const uploadImageToStorage = async (
     
     return publicUrl;
   } catch (error) {
-    console.error('Error in uploadImageToStorage:', error);
+    if (process.env.NODE_ENV === "development") {
+      if (error instanceof Error) {
+        console.error('Error in uploadImageToStorage:', error.message);
+      } else {
+        console.error('Error in uploadImageToStorage:', JSON.stringify(error, null, 2));
+      }
+    }
     throw error;
   }
 };
@@ -76,11 +88,23 @@ export const deleteImageFromStorage = async (imageUrl: string): Promise<void> =>
       .remove([filePath]);
     
     if (error) {
-      console.error('Error deleting file:', error);
+      if (process.env.NODE_ENV === "development") {
+        if (error instanceof Error) {
+          console.error('Error deleting file:', error.message);
+        } else {
+          console.error('Error deleting file:', JSON.stringify(error, null, 2));
+        }
+      }
       throw error;
     }
   } catch (error) {
-    console.error('Error in deleteImageFromStorage:', error);
+    if (process.env.NODE_ENV === "development") {
+      if (error instanceof Error) {
+        console.error('Error in deleteImageFromStorage:', error.message);
+      } else {
+        console.error('Error in deleteImageFromStorage:', JSON.stringify(error, null, 2));
+      }
+    }
     throw error;
   }
 };

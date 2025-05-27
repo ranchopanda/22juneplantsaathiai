@@ -1,4 +1,3 @@
-
 export type { 
   SoilAnalysisResult,
   YieldPredictionResult,

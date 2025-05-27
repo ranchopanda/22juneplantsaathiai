@@ -67,7 +67,7 @@ const DiseaseDetection = () => {
                         <div className="flex items-center justify-center mb-4">
                           <Badge variant="outline" className="px-3 py-1 bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800 flex items-center gap-1">
                             <Sparkles className="h-3.5 w-3.5" />
-                            <span>Enhanced Analysis with Gemini 2.0 Flash</span>
+                            <span>Enhanced Analysis Mode</span>
                           </Badge>
                         </div>
                       )}
@@ -84,7 +84,7 @@ const DiseaseDetection = () => {
                                   Was this analysis helpful?
                                 </h4>
                                 <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                  If you're not satisfied with the results, we can analyze your image using our most advanced AI model for better accuracy.
+                                  If you're not satisfied with the results, you can re-analyze your image using enhanced analysis mode for deeper insights.
                                 </p>
                               </div>
                             </div>
@@ -145,7 +145,7 @@ const DiseaseDetection = () => {
               
               {detectionResult && isAdvancedAnalysis && (
                 <div className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                  <p>This analysis was performed using Gemini 2.0 Flash for maximum accuracy.</p>
+                  <p>This analysis was performed using our proprietary AI engine for maximum accuracy.</p>
                 </div>
               )}
             </CardContent>

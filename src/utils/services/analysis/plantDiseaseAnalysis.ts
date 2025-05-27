@@ -1,6 +1,6 @@
 import { createGeminiModel, tryWithApiKeys } from "../helpers/geminiModelHelper";
 import { AnalysisData, FarmerContext } from '../../types/analysisTypes';
-import { analyzeWithGemini } from "../gemini/geminiService";
+import { analyzePlantDisease as analyzePlantDiseaseAPI } from "../ai/aiService";
 
 const FALLBACK_RESULT: AnalysisData = {
   id: "",
@@ -26,7 +26,7 @@ const FALLBACK_RESULT: AnalysisData = {
   recovery_chance: "Medium"
 };
 
-// Standard analysis with regular Gemini model, using the enhanced direct API implementation
+// Standard analysis with regular AI model, using the enhanced direct API implementation
 export const analyzePlantDisease = async (
   base64Image: string, 
   farmerContext: FarmerContext = {}
@@ -37,9 +37,15 @@ export const analyzePlantDisease = async (
 
   try {
     // Use the enhanced direct API implementation
-    return await analyzeWithGemini(base64Image, farmerContext);
+    return await analyzePlantDiseaseAPI(base64Image, farmerContext);
   } catch (error) {
-    console.error("Error using direct Gemini API:", error);
+    if (process.env.NODE_ENV === "development") {
+      if (error instanceof Error) {
+        console.error("Error using direct AI analysis engine:", error.message);
+      } else {
+        console.error("Error using direct AI analysis engine:", JSON.stringify(error, null, 2));
+      }
+    }
     
     // Fallback to using the SDK if direct API fails
     return tryWithApiKeys(async (apiKey) => {
@@ -115,7 +121,13 @@ If you're uncertain, provide your best estimate but indicate a lower confidence 
         
         return validatedResult;
       } catch (error) {
-        console.error("Error parsing JSON response:", error);
+        if (process.env.NODE_ENV === "development") {
+          if (error instanceof Error) {
+            console.error("Error parsing JSON response:", error.message);
+          } else {
+            console.error("Error parsing JSON response:", JSON.stringify(error, null, 2));
+          }
+        }
         console.log("Raw response text:", text);
         return FALLBACK_RESULT;
       }
@@ -141,9 +153,15 @@ export const analyzeWithAdvancedModel = async (
     }
     
     // Use the enhanced direct API implementation
-    return await analyzeWithGemini(base64Image, farmerContext);
+    return await analyzePlantDiseaseAPI(base64Image, farmerContext);
   } catch (error) {
-    console.error("Error using direct Gemini API for advanced analysis:", error);
+    if (process.env.NODE_ENV === "development") {
+      if (error instanceof Error) {
+        console.error("Error using direct AI analysis engine for advanced analysis:", error.message);
+      } else {
+        console.error("Error using direct AI analysis engine for advanced analysis:", JSON.stringify(error, null, 2));
+      }
+    }
     
     // Fallback to using the SDK if direct API fails
     return tryWithApiKeys(async (apiKey) => {
@@ -251,7 +269,13 @@ Your analysis will be used by farmers to make critical decisions about their cro
         
         return validatedResult;
       } catch (error) {
-        console.error("Error parsing JSON response:", error);
+        if (process.env.NODE_ENV === "development") {
+          if (error instanceof Error) {
+            console.error("Error parsing JSON response:", error.message);
+          } else {
+            console.error("Error parsing JSON response:", JSON.stringify(error, null, 2));
+          }
+        }
         console.log("Raw response text:", text);
         return FALLBACK_RESULT;
       }

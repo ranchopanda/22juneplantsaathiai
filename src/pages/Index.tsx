@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Leaf, Map, CloudRain, BarChart3, Camera, LayoutGrid, Wheat, Sprout, Volume2, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import GeminiChatbot from "@/components/GeminiChatbot";
+import AgriAIChatbot from "@/components/GeminiChatbot";
 
 // Language context would be ideal, but for now we'll use the local state
 const Index = () => {
@@ -484,7 +484,7 @@ const Index = () => {
         <MessageSquare className="h-6 w-6" />
       </button>
       
-      <GeminiChatbot 
+      <AgriAIChatbot 
         language={language} 
         isOpen={isChatbotOpen} 
         onClose={() => setIsChatbotOpen(false)} 

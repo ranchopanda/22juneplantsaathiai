@@ -1,5 +1,4 @@
-
-import { analyzeGitError, GitErrorAnalysisResult } from './services/geminiAIService';
+import { analyzeGitError, GitErrorAnalysisResult } from './services/aiService';
 
 export const handleGitPushWithFallback = async (): Promise<{
   success: boolean;
