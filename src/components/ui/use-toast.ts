@@ -1,3 +1,4 @@
-import { useToast, toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
-export { useToast, toast };
+// Only useToast is exported. There is no named export 'toast'.
+export { useToast };

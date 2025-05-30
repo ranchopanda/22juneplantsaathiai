@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { TextSkeleton } from "@/components/ui/skeleton";
 import { MessageSquare, Send, X, Mic } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -15,13 +16,21 @@ interface AgriAIChatbotProps {
   language: string;
   isOpen: boolean;
   onClose: () => void;
+  crop?: string;
+  location?: string;
 }
 
-const AgriAIChatbot = ({ language, isOpen, onClose }: AgriAIChatbotProps) => {
+const SYSTEM_PROMPT = `You are AgriAdvisor AI, a friendly and knowledgeable farming assistant designed for Indian farmers. You speak in simple, clear language and can switch between English and Hindi based on the user's preference or input. You help farmers by answering questions about crop diseases, weather, fertilizers, soil health, pest control, government schemes, and sustainable practices.
+
+Always be respectful, concise, and empathetic. Provide farmer-friendly advice in bullet points or short paragraphs. If you are unsure, encourage the farmer to consult a local expert.
+
+Use clear headers and emojis to make answers more engaging (if the user prefers a casual tone). Use Hinglish (Hindi + English) when the user mixes both languages.`;
+
+const AgriAIChatbot = ({ language, isOpen, onClose, crop, location }: AgriAIChatbotProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: language === 'हिंदी' 
+      content: language === 'हिंदी'
         ? 'नमस्ते! मैं आपका कृषि सहायक हूँ। मैं आपकी फसलों, मौसम या खेती के बारे में किसी भी प्रश्न का उत्तर दे सकता हूँ।'
         : 'Hello! I\'m your farming assistant. I can answer any questions about crops, weather, or farming practices.'
     }
@@ -38,43 +47,41 @@ const AgriAIChatbot = ({ language, isOpen, onClose }: AgriAIChatbotProps) => {
 
   const handleSend = async () => {
     if (!inputValue.trim()) return;
-    
-    // Add user message
     const userMessage = { role: 'user' as const, content: inputValue };
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
     setIsLoading(true);
-    
-    // In a real implementation, this would call the AI backend
-    // For now, we'll simulate a response
-    setTimeout(() => {
-      const farmingResponses = {
-        'हिंदी': [
-          'फसलों की देखभाल के लिए नियमित रूप से सिंचाई महत्वपूर्ण है।',
-          'मिट्टी की जांच करके आप सही उर्वरक का चयन कर सकते हैं।',
-          'जैविक खेती पर्यावरण के लिए अच्छी है और आपकी फसल की गुणवत्ता बढ़ाती है।',
-          'आपके क्षेत्र में इस मौसम में गेहूं की बुवाई उपयुक्त रहेगी।',
-          'कीटों से बचाव के लिए नीम का तेल एक प्राकृतिक विकल्प है।',
-        ],
-        'English': [
-          'Regular irrigation is important for crop care.',
-          'By testing your soil, you can choose the right fertilizer.',
-          'Organic farming is good for the environment and improves crop quality.',
-          'Wheat planting would be suitable in your region this season.',
-          'Neem oil is a natural alternative for pest control.',
+    try {
+      // Prepare payload for backend
+      const payload = {
+        systemPrompt: SYSTEM_PROMPT,
+        language,
+        crop,
+        location,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          ...messages,
+          userMessage
         ]
       };
-      
-      const languageKey = language === 'हिंदी' ? 'हिंदी' : 'English';
-      const randomIndex = Math.floor(Math.random() * farmingResponses[languageKey].length);
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('AI backend error');
+      const data = await res.json();
       const botResponse = {
         role: 'assistant' as const,
-        content: farmingResponses[languageKey][randomIndex]
+        content: data.reply || 'Sorry, I could not process your request.'
       };
-      
       setMessages(prev => [...prev, botResponse]);
+    } catch (err: any) {
+      setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Sorry, I could not reach the AI assistant. Please try again later.' }]);
+      toast({ title: 'AI Error', description: err.message || 'Could not reach backend', variant: 'destructive' });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleVoiceInput = () => {
@@ -82,7 +89,6 @@ const AgriAIChatbot = ({ language, isOpen, onClose }: AgriAIChatbotProps) => {
       title: language === 'हिंदी' ? 'आवाज़ इनपुट' : 'Voice Input',
       description: language === 'हिंदी' ? 'आवाज़ इनपुट सुनना शुरू...' : 'Listening for voice input...'
     });
-    
     // Simulate voice input (in a real app, use Web Speech API)
     setTimeout(() => {
       const voiceTexts = {
@@ -97,7 +103,6 @@ const AgriAIChatbot = ({ language, isOpen, onClose }: AgriAIChatbotProps) => {
           'Which crop is good for this season?'
         ]
       };
-      
       const languageKey = language === 'हिंदी' ? 'हिंदी' : 'English';
       const randomIndex = Math.floor(Math.random() * voiceTexts[languageKey].length);
       setInputValue(voiceTexts[languageKey][randomIndex]);
@@ -120,7 +125,6 @@ const AgriAIChatbot = ({ language, isOpen, onClose }: AgriAIChatbotProps) => {
             <X className="h-5 w-5" />
           </Button>
         </div>
-        
         <CardContent className="flex-grow p-3 overflow-y-auto bg-slate-50 dark:bg-gray-900">
           <div className="space-y-4">
             {messages.map((message, index) => (
@@ -135,11 +139,10 @@ const AgriAIChatbot = ({ language, isOpen, onClose }: AgriAIChatbotProps) => {
                       : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
                   }`}
                 >
-                  {message.content}
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
                 </div>
               </div>
             ))}
-            
             {isLoading && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-lg p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -147,11 +150,9 @@ const AgriAIChatbot = ({ language, isOpen, onClose }: AgriAIChatbotProps) => {
                 </div>
               </div>
             )}
-            
             <div ref={messagesEndRef} />
           </div>
         </CardContent>
-        
         <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2">
           <Button 
             variant="outline" 

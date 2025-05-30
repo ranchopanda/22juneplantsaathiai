@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -61,7 +60,7 @@ const SuccessStories = () => {
             </div>
             <h2 className="text-2xl font-semibold mb-2">No Success Stories Yet</h2>
             <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-8">
-              Be the first to share how Kisan Krishi Dost helped improve your farming practices and yield.
+              Be the first to share how Plant Saathi AI helped improve your farming practices and yield.
             </p>
             <Button 
               onClick={() => setShowForm(true)} 
@@ -74,7 +73,7 @@ const SuccessStories = () => {
           
           <div className="mt-12 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
             <p className="text-center text-sm text-amber-800 dark:text-amber-200">
-              Your success story helps inspire and guide other farmers. Share your experience with using Kisan Krishi Dost.
+              Your success story helps inspire and guide other farmers. Share your experience with using Plant Saathi AI.
             </p>
           </div>
         </div>

@@ -1,4 +1,3 @@
-
 import { Phone, Mail, MapPin } from "lucide-react";
 
 const CustomFooter = () => {
@@ -7,7 +6,7 @@ const CustomFooter = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-xl font-semibold mb-4">Kisan Krishi Dost</h3>
+            <h3 className="text-xl font-semibold mb-4">Plant Saathi AI</h3>
             <p className="text-white/80 mb-4">
               Empowering Indian farmers with technology and information for sustainable agriculture.
             </p>
@@ -44,7 +43,7 @@ const CustomFooter = () => {
         </div>
         
         <div className="border-t border-white/10 mt-8 pt-8 text-center text-white/60 text-sm">
-          <p>© 2024 Kisan Krishi Dost. All rights reserved.</p>
+          <p>© 2024 Plant Saathi AI. All rights reserved.</p>
           <p className="mt-2">A prototype application for Indian farmers.</p>
         </div>
       </div>

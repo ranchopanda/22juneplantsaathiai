@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -70,7 +69,7 @@ const SuccessStoryForm = ({ onClose }: SuccessStoryFormProps) => {
       <CardHeader>
         <CardTitle className="text-kisan-green dark:text-kisan-gold">Share Your Success Story</CardTitle>
         <CardDescription>
-          Tell us how किसान कृषि दोस्त has helped you improve your farming. Your story could inspire other farmers.
+          Tell us how प्लांट साथी एआई has helped you improve your farming. Your story could inspire other farmers.
         </CardDescription>
       </CardHeader>
       <CardContent>

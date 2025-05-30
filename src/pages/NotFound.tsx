@@ -9,10 +9,10 @@ const NotFound = () => {
 
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
-      console.error(
-        "404 Error: User attempted to access non-existent route:",
+    console.error(
+      "404 Error: User attempted to access non-existent route:",
         typeof location.pathname === 'object' ? JSON.stringify(location.pathname, null, 2) : location.pathname
-      );
+    );
     }
   }, [location.pathname]);
 

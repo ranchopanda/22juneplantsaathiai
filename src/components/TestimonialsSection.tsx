@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Quote } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ const testimonials = [
     id: 1,
     name: "Rajesh Patel",
     location: "Gujarat",
-    quote: "किसान कृषि दोस्त AI ने मेरी फसल को बीमारियों से बचाने में मदद की। मैं अपने मोबाइल से ही फसल की बीमारी का पता लगा लेता हूं।",
+    quote: "प्लांट साथी एआई ने मेरी फसल को बीमारियों से बचाने में मदद की। मैं अपने मोबाइल से ही फसल की बीमारी का पता लगा लेता हूं।",
     crop: "Cotton",
     image: "https://randomuser.me/api/portraits/men/32.jpg"
   },

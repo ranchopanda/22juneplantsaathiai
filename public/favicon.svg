@@ -1,0 +1,14 @@
+<svg width="32" height="32" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <path d="M60,160 C60,80 180,80 180,160 C180,240 300,240 300,160 C300,80 180,80 180,160 C180,240 60,240 60,160 Z" stroke="#219150" stroke-width="16" fill="none"/>
+    <path d="M60,160 C60,80 180,80 180,160" stroke="#6FCF97" stroke-width="16" fill="none"/>
+    <path d="M180,160 C180,240 300,240 300,160" stroke="#6FCF97" stroke-width="16" fill="none"/>
+    <ellipse cx="60" cy="160" rx="12" ry="6" fill="#219150" transform="rotate(-20 60 160)"/>
+    <ellipse cx="180" cy="80" rx="10" ry="5" fill="#219150" transform="rotate(10 180 80)"/>
+    <ellipse cx="300" cy="160" rx="12" ry="6" fill="#219150" transform="rotate(20 300 160)"/>
+    <ellipse cx="180" cy="240" rx="10" ry="5" fill="#219150" transform="rotate(-10 180 240)"/>
+    <ellipse cx="120" cy="120" rx="7" ry="3.5" fill="#6FCF97" transform="rotate(-15 120 120)"/>
+    <ellipse cx="240" cy="200" rx="7" ry="3.5" fill="#6FCF97" transform="rotate(15 240 200)"/>
+    <text x="200" y="150" font-size="40" font-family="Arial, Helvetica, sans-serif" fill="#219150" font-weight="bold">AI</text>
+  </g>
+</svg> 

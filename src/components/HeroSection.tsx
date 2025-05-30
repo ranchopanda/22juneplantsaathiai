@@ -11,7 +11,7 @@ const HeroSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="text-center md:text-left">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4 text-kisan-green-dark dark:text-kisan-gold">
-              किसान कृषि दोस्त AI
+              प्लांट साथी एआई
             </h1>
             <p className="text-xl md:text-2xl mb-6 text-gray-700 dark:text-gray-300">
               Your AI-powered farming assistant for better crop management and increased productivity

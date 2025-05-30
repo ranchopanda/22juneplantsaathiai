@@ -14,14 +14,22 @@ import {
   VolumeX,
   Volume2,
   Redo,
-  CheckCircle
+  CheckCircle,
+  Info,
+  Shield,
+  Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { generatePDF, DiseaseReportData } from "@/utils/services/pdf/generatePDF";
+import { useToast } from "@/hooks/use-toast";
 
 interface AnalysisResultsProps {
   result: DetectionResult;
@@ -30,6 +38,7 @@ interface AnalysisResultsProps {
 export const AnalysisResults = ({ result }: AnalysisResultsProps) => {
   const [language, setLanguage] = useState<'en' | 'hi'>('en');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const { toast } = useToast();
 
   // Get confidence color based on percentage
   const getConfidenceColor = (confidence: number): string => {
@@ -50,10 +59,36 @@ export const AnalysisResults = ({ result }: AnalysisResultsProps) => {
     return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300";
   };
 
-  // Download as PDF (placeholder function)
-  const downloadPDF = () => {
-    // This would use jsPDF or similar library to generate a PDF report
-    alert("PDF download functionality will be implemented soon");
+  // Download as PDF
+  const downloadPDF = async () => {
+    try {
+      const reportData: DiseaseReportData = {
+        cropName: result.crop_name || "Unknown Crop",
+        diseaseName: result.disease_name || "Unknown Disease",
+        confidence: result.confidence || 0,
+        symptoms: result.symptoms || [],
+        immediateAction: result.immediate_action || "No immediate action specified",
+        shortTermPlan: result.short_term_plan || "No short-term plan specified",
+        organicTreatment: result.organic_treatment || "No organic treatment specified",
+        chemicalTreatment: result.chemical_treatment || "No chemical treatment specified",
+        imageUrl: result.image_url,
+        reportId: result.id
+      };
+
+      await generatePDF(reportData);
+      
+      toast({
+        title: "Success!",
+        description: "PDF has been generated successfully.",
+      });
+    } catch (error) {
+      console.error("PDF Generation Error:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate PDF",
+        variant: "destructive",
+      });
+    }
   };
 
   // Share via WhatsApp

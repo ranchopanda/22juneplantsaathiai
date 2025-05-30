@@ -1,0 +1,20 @@
+{
+  "short_name": "PlantSaathiAI",
+  "name": "Plant Saathi AI",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "/favicon.ico",
+      "type": "image/x-icon",
+      "sizes": "32x32 16x16"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#219150",
+  "background_color": "#ffffff"
+} 

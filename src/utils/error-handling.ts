@@ -1,4 +1,5 @@
-import { toast } from "@/hooks/use-toast";
+// import { toast } from "@/hooks/use-toast";
+// TODO: Move toast notifications to be handled by React components using useToast hook.
 
 interface RetryOptions {
   maxAttempts: number;
@@ -39,11 +40,11 @@ export async function withRetry<T>(
       
       await new Promise(resolve => setTimeout(resolve, delay));
       
-      toast({
-        title: "Retrying...",
-        description: `Attempt ${attempt} of ${options.maxAttempts}`,
-        variant: "default",
-      });
+      // toast({
+      //   title: "Retrying...",
+      //   description: `Attempt ${attempt} of ${options.maxAttempts}`,
+      //   variant: "default",
+      // });
     }
   }
   
@@ -52,17 +53,17 @@ export async function withRetry<T>(
 
 export function handleError(error: unknown): void {
   if (error instanceof AppError) {
-    toast({
-      title: "Error",
-      description: error.message,
-      variant: error.recoverable ? "default" : "destructive",
-    });
+    // toast({
+    //   title: "Error",
+    //   description: error.message,
+    //   variant: error.recoverable ? "default" : "destructive",
+    // });
   } else {
-    toast({
-      title: "Unexpected Error",
-      description: "An unexpected error occurred. Please try again.",
-      variant: "destructive",
-    });
+    // toast({
+    //   title: "Unexpected Error",
+    //   description: "An unexpected error occurred. Please try again.",
+    //   variant: "destructive",
+    // });
   }
   
   console.error("Error:", error);
@@ -73,19 +74,19 @@ export const isOnline = () => navigator.onLine;
 
 export function setupOfflineSupport() {
   window.addEventListener('online', () => {
-    toast({
-      title: "Back Online",
-      description: "You're back online. Changes will be synced.",
-      variant: "default",
-    });
+    // toast({
+    //   title: "Back Online",
+    //   description: "You're back online. Changes will be synced.",
+    //   variant: "default",
+    // });
   });
   
   window.addEventListener('offline', () => {
-    toast({
-      title: "Offline Mode",
-      description: "You're offline. Some features may be limited.",
-      variant: "default",
-    });
+    // toast({
+    //   title: "Offline Mode",
+    //   description: "You're offline. Some features may be limited.",
+    //   variant: "default",
+    // });
   });
 }
 

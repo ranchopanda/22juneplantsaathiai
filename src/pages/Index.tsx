@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Leaf, Map, CloudRain, BarChart3, Camera, LayoutGrid, Wheat, Sprout, Volume2, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AgriAIChatbot from "@/components/GeminiChatbot";
+import Logo from "@/assets/logo.svg";
 
 // Language context would be ideal, but for now we'll use the local state
 const Index = () => {
   const [darkMode, setDarkMode] = useState(false);
-  const [language, setLanguage] = useState<string>("English");
+  const [language, setLanguage] = useState<string>("en");
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -44,7 +45,7 @@ const Index = () => {
       setIsLoading(false);
       toast({
         title: "Data loaded",
-        description: "Welcome to Kisan Krishi Dost!",
+        description: "Welcome to Plant Saathi AI!",
         variant: "success",
       });
     }, 1500);
@@ -80,7 +81,7 @@ const Index = () => {
     const utterance = new SpeechSynthesisUtterance(text);
     
     // Set language based on current language
-    utterance.lang = language === "हिंदी" ? "hi-IN" : "en-US";
+    utterance.lang = language === "hi" ? "hi-IN" : "en-US";
     
     // Set voice properties
     utterance.rate = 0.9; // Slightly slower than normal
@@ -102,8 +103,8 @@ const Index = () => {
     speechSynthesisRef.current.speak(utterance);
     
     toast({
-      title: language === "हिंदी" ? "वॉयस निर्देश" : "Voice Instructions",
-      description: language === "हिंदी" ? "निर्देश बोले जा रहे हैं" : "Playing voice instructions",
+      title: language === "hi" ? "वॉयस निर्देश" : "Voice Instructions",
+      description: language === "hi" ? "निर्देश बोले जा रहे हैं" : "Playing voice instructions",
     });
   };
 
@@ -111,8 +112,8 @@ const Index = () => {
     setIsChatbotOpen(!isChatbotOpen);
     if (!isChatbotOpen) {
       toast({
-        title: language === "हिंदी" ? "कृषि सहायक" : "Farming Assistant",
-        description: language === "हिंदी" ? "आपका सहायक अब उपलब्ध है" : "Your assistant is now available",
+        title: language === "hi" ? "कृषि सहायक" : "Farming Assistant",
+        description: language === "hi" ? "आपका सहायक अब उपलब्ध है" : "Your assistant is now available",
       });
     }
   };
@@ -165,8 +166,8 @@ const Index = () => {
       color: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
       action: () => {
         toast({
-          title: language === "हिंदी" ? "नेविगेट हो रहा है..." : "Navigating...",
-          description: language === "हिंदी" ? "रोग पहचान पेज पर जा रहे हैं" : "Going to disease detection page",
+          title: language === "hi" ? "नेविगेट हो रहा है..." : "Navigating...",
+          description: language === "hi" ? "रोग पहचान पेज पर जा रहे हैं" : "Going to disease detection page",
         });
         navigate("/disease-detection");
       },
@@ -189,8 +190,8 @@ const Index = () => {
       color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
       action: () => {
         toast({
-          title: language === "हिंदी" ? "मौसम डेटा लोड हो रहा है..." : "Loading weather data...",
-          description: language === "हिंदी" ? "उत्तर प्रदेश के लिए मौसम की जानकारी" : "Weather information for UP",
+          title: language === "hi" ? "मौसम डेटा लोड हो रहा है..." : "Loading weather data...",
+          description: language === "hi" ? "उत्तर प्रदेश के लिए मौसम की जानकारी" : "Weather information for UP",
         });
         navigate("/weather");
       },
@@ -213,8 +214,8 @@ const Index = () => {
       color: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
       action: () => {
         toast({
-          title: language === "हिंदी" ? "मिट्टी विश्लेषण" : "Soil Analysis",
-          description: language === "हिंदी" ? "मिट्टी की जांच के लिए तैयार" : "Ready for soil testing",
+          title: language === "hi" ? "मिट्टी विश्लेषण" : "Soil Analysis",
+          description: language === "hi" ? "मिट्टी की जांच के लिए तैयार" : "Ready for soil testing",
         });
         navigate("/soil-analysis");
       },
@@ -237,8 +238,8 @@ const Index = () => {
       color: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
       action: () => {
         toast({
-          title: language === "हिंदी" ? "उपज अनुमान तैयार हो रहा है" : "Preparing yield prediction",
-          description: language === "हिंदी" ? "अपनी फसल का चयन करें" : "Select your crop",
+          title: language === "hi" ? "उपज अनुमान तैयार हो रहा है" : "Preparing yield prediction",
+          description: language === "hi" ? "अपनी फसल का चयन करें" : "Select your crop",
         });
         navigate("/yield-prediction");
       },
@@ -261,8 +262,8 @@ const Index = () => {
       color: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
       action: () => {
         toast({
-          title: language === "हिंदी" ? "फसल जानकारी" : "Crop Information",
-          description: language === "हिंदी" ? "फसलों के बारे में जानकारी" : "Information about crops",
+          title: language === "hi" ? "फसल जानकारी" : "Crop Information",
+          description: language === "hi" ? "फसलों के बारे में जानकारी" : "Information about crops",
         });
         navigate("/crop-info");
       },
@@ -278,6 +279,14 @@ const Index = () => {
       ]
     }
   ];
+
+  const renderBrandedLoading = () => (
+    <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <img src={Logo} alt="Plant Saathi AI Logo" className="w-24 h-24 mb-6 animate-bounce" />
+      <div className="w-12 h-12 border-4 border-kisan-green border-t-transparent rounded-full animate-spin mb-4" />
+      <p className="text-lg text-kisan-green font-semibold">Loading Plant Saathi AI...</p>
+    </div>
+  );
 
   const renderSkeletons = () => {
     return Array(5).fill(0).map((_, index) => (
@@ -309,10 +318,10 @@ const Index = () => {
         <div className="container mx-auto px-4 py-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-kisan-green dark:text-kisan-gold mb-3">
-              {language === "हिंदी" ? "AI-आधारित कृषि समाधान" : "AI-Powered Farming Solutions"}
+              {language === "hi" ? "AI-आधारित कृषि समाधान" : "AI-Powered Farming Solutions"}
             </h2>
             <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              {language === "हिंदी" 
+              {language === "hi" 
                 ? "हमारी अत्याधुनिक AI तकनीक भारतीय किसानों को डेटा-संचालित निर्णय लेने, उत्पादकता बढ़ाने और टिकाऊ कृषि अभ्यासों को प्राप्त करने में मदद करती है।" 
                 : "Our cutting-edge AI technology helps Indian farmers make data-driven decisions, increase productivity, and achieve sustainable agriculture practices."}
             </p>
@@ -320,7 +329,7 @@ const Index = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {isLoading ? (
-              renderSkeletons()
+              renderBrandedLoading()
             ) : (
               aiTools.map((tool, index) => (
                 <Card 
@@ -332,9 +341,9 @@ const Index = () => {
                       {tool.icon}
                     </div>
                     <CardTitle className="text-2xl font-bold text-gray-800 dark:text-gray-200 flex items-center justify-between">
-                      {language === "हिंदी" ? tool.hindiTitle : tool.title}
+                      {language === "hi" ? tool.hindiTitle : tool.title}
                       <button 
-                        onClick={() => playInstructions(language === "हिंदी" ? tool.hindiInstructions : tool.instructions)}
+                        onClick={() => playInstructions(language === "hi" ? tool.hindiInstructions : tool.instructions)}
                         className={`p-2 ${isSpeaking ? 'bg-kisan-green dark:bg-kisan-gold' : 'bg-kisan-green/10 dark:bg-kisan-green/20'} rounded-full hover:bg-kisan-green/20 dark:hover:bg-kisan-green/30 transition-all duration-300 hover:scale-110`}
                         aria-label="Play voice instructions"
                       >
@@ -347,7 +356,7 @@ const Index = () => {
                   </CardHeader>
                   <CardContent className="px-6 pb-2">
                     <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                      {(language === "हिंदी" ? tool.hindiInstructions : tool.instructions).map((instruction, i) => (
+                      {(language === "hi" ? tool.hindiInstructions : tool.instructions).map((instruction, i) => (
                         <li key={i}>{instruction}</li>
                       ))}
                     </ul>
@@ -357,7 +366,7 @@ const Index = () => {
                       onClick={tool.action}
                       className="w-full h-12 text-base bg-kisan-green hover:bg-kisan-green-dark text-white dark:bg-kisan-green-dark dark:hover:bg-kisan-green transition-all duration-300 transform hover:translate-y-[-2px]"
                     >
-                      {language === "हिंदी" ? "इस्तेमाल करें" : "Try Now"}
+                      {language === "hi" ? "इस्तेमाल करें" : "Try Now"}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -370,10 +379,10 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-kisan-green dark:text-kisan-gold mb-3">
-                {language === "हिंदी" ? "प्रमुख फसलें" : "Featured Crops"}
+                {language === "hi" ? "प्रमुख फसलें" : "Featured Crops"}
               </h2>
               <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                {language === "हिंदी" 
+                {language === "hi" 
                   ? "भारत की प्रमुख फसलों के बारे में जानकारी, जिसमें खेती के तरीके, रोग निवारण और बाजार अंतर्दृष्टि शामिल हैं।"
                   : "Browse information about India's major crops, including growing methods, disease prevention, and market insights."}
               </p>
@@ -381,7 +390,7 @@ const Index = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {isLoading ? (
-                renderSkeletons()
+                renderBrandedLoading()
               ) : (
                 featuredCrops.map((crop, index) => (
                   <Card 
@@ -391,7 +400,7 @@ const Index = () => {
                     <div className="h-40 overflow-hidden">
                       <img 
                         src={crop.image} 
-                        alt={language === "हिंदी" ? crop.hindiName : crop.name} 
+                        alt={language === "hi" ? crop.hindiName : crop.name} 
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
@@ -407,7 +416,7 @@ const Index = () => {
                           {crop.icon}
                         </div>
                         <CardTitle className="text-xl font-bold text-gray-800 dark:text-gray-200">
-                          {language === "हिंदी" ? crop.hindiName : crop.name}
+                          {language === "hi" ? crop.hindiName : crop.name}
                         </CardTitle>
                       </div>
                     </CardHeader>
@@ -422,7 +431,7 @@ const Index = () => {
                         onClick={crop.action}
                         className="w-full border-kisan-green text-kisan-green hover:bg-kisan-green hover:text-white dark:border-kisan-gold dark:text-kisan-gold dark:hover:bg-kisan-gold/20 transition-all duration-300"
                       >
-                        {language === "हिंदी" ? "और जानें" : "Learn More"}
+                        {language === "hi" ? "और जानें" : "Learn More"}
                       </Button>
                     </CardFooter>
                   </Card>
@@ -436,7 +445,7 @@ const Index = () => {
                 variant="outline"
                 className="border-kisan-green text-kisan-green hover:bg-kisan-green hover:text-white dark:border-kisan-gold dark:text-kisan-gold dark:hover:bg-kisan-gold/20 transition-all duration-300 transform hover:translate-y-[-2px]"
               >
-                {language === "हिंदी" ? "सभी फसलें देखें" : "View All Crops"}
+                {language === "hi" ? "सभी फसलें देखें" : "View All Crops"}
               </Button>
             </div>
           </div>
@@ -451,25 +460,25 @@ const Index = () => {
           <button onClick={() => navigate("/disease-detection")} className="flex flex-col items-center group p-2 active:bg-gray-100 dark:active:bg-gray-700 rounded-lg touch-action-manipulation">
             <Camera className="h-6 w-6 text-kisan-green dark:text-kisan-gold transition-transform group-active:scale-90" />
             <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
-              {language === "हिंदी" ? "रोग पहचानें" : "Diseases"}
+              {language === "hi" ? "रोग पहचानें" : "Diseases"}
             </span>
           </button>
           <button onClick={() => navigate("/weather")} className="flex flex-col items-center group p-2 active:bg-gray-100 dark:active:bg-gray-700 rounded-lg touch-action-manipulation">
             <CloudRain className="h-6 w-6 text-kisan-green dark:text-kisan-gold transition-transform group-active:scale-90" />
             <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
-              {language === "हिंदी" ? "मौसम" : "Weather"}
+              {language === "hi" ? "मौसम" : "Weather"}
             </span>
           </button>
           <button onClick={() => navigate("/soil-analysis")} className="flex flex-col items-center group p-2 active:bg-gray-100 dark:active:bg-gray-700 rounded-lg touch-action-manipulation">
             <Map className="h-6 w-6 text-kisan-green dark:text-kisan-gold transition-transform group-active:scale-90" />
             <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
-              {language === "हिंदी" ? "मिट्टी जांच" : "Soil"}
+              {language === "hi" ? "मिट्टी जांच" : "Soil"}
             </span>
           </button>
           <button onClick={() => navigate("/crop-info")} className="flex flex-col items-center group p-2 active:bg-gray-100 dark:active:bg-gray-700 rounded-lg touch-action-manipulation">
             <Wheat className="h-6 w-6 text-kisan-green dark:text-kisan-gold transition-transform group-active:scale-90" />
             <span className="text-xs mt-1 text-gray-700 dark:text-gray-300">
-              {language === "हिंदी" ? "फसल जानकारी" : "Crops"}
+              {language === "hi" ? "फसल जानकारी" : "Crops"}
             </span>
           </button>
         </div>

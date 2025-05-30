@@ -1,17 +1,31 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Camera, Upload, X, RotateCcw, ImageIcon, Eye, Image, AlertTriangle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { 
+  Camera, 
+  Upload, 
+  X, 
+  RotateCcw, 
+  ImageIcon, 
+  Eye, 
+  Image as ImageLucide, 
+  AlertTriangle,
+  Trash2,
+  ImagePlus
+} from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
+import { MagnifierAnalysisAnimation } from "./MagnifierAnalysisAnimation";
+import { cn } from "@/lib/utils";
 
 interface ImageUploaderProps {
   onImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   selectedImage: string | null;
+  loading: boolean;
 }
 
-export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderProps) => {
+export const ImageUploader = ({ onImageChange, selectedImage, loading }: ImageUploaderProps) => {
   const [isMobile, setIsMobile] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
@@ -254,215 +268,176 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
 
   return (
     <div className="relative">
-      {showCamera ? (
-        <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-4">
-          {captureError ? (
-            <div className="text-center text-white p-4 bg-red-500/20 rounded-lg">
-              <p className="mb-2">Camera Error: {captureError}</p>
-              <Button 
-                onClick={() => {
-                  setCaptureError(null);
-                  startCamera();
-                }}
-                className="bg-white text-red-500 hover:bg-gray-100"
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Try Again
-              </Button>
+      {loading && selectedImage ? (
+        <MagnifierAnalysisAnimation imageUrl={selectedImage} />
+      ) : (
+        <>
+          {showCamera ? (
+            <div className="fixed inset-0 bg-black z-50 flex flex-col items-center justify-center p-4">
+              {captureError ? (
+                <div className="text-center text-white p-4 bg-red-500/20 rounded-lg">
+                  <p className="mb-2">Camera Error: {captureError}</p>
+                  <Button 
+                    onClick={() => {
+                      setCaptureError(null);
+                      startCamera();
+                    }}
+                    className="bg-white text-red-500 hover:bg-gray-100"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Try Again
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="relative w-full max-w-md">
+                    {/* Video element */}
+                    <video 
+                      ref={videoRef} 
+                      autoPlay 
+                      playsInline 
+                      muted
+                      className="max-w-full max-h-[70vh] rounded-lg mx-auto bg-gray-900"
+                      style={{ minHeight: '200px' }}
+                    />
+                    
+                    {/* Force ready countdown */}
+                    {forceReadyTimer > 0 && forceReadyTimer < 5 && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
+                        Ready in {5 - forceReadyTimer}s
+                      </div>
+                    )}
+                    
+                    {/* Show "Force Capture" button after 5 seconds */}
+                    {forceReadyTimer >= 5 && (
+                      <div className="absolute top-0 left-0 right-0 bg-green-500/80 text-white text-sm py-1 text-center">
+                        Camera Ready
+                      </div>
+                    )}
+                    
+                    {/* Hidden canvas for image processing */}
+                    <canvas ref={canvasRef} className="hidden" />
+                  </div>
+                  
+                  <div className="absolute bottom-10 left-0 right-0 flex justify-center space-x-4 p-4">
+                    <Button
+                      onClick={switchCamera}
+                      variant="outline"
+                      className="rounded-full p-3 bg-white/20 text-white hover:bg-white/30"
+                      disabled={isCapturing}
+                    >
+                      <RotateCcw className="h-6 w-6" />
+                    </Button>
+                    
+                    <Button
+                      onClick={captureImage}
+                      className="rounded-full p-6 bg-white text-kisan-green hover:bg-gray-200"
+                      disabled={isCapturing}
+                    >
+                      {isCapturing ? (
+                        <div className="h-12 w-12 rounded-full border-2 border-kisan-green border-t-transparent animate-spin"></div>
+                      ) : (
+                        <div className="h-12 w-12 rounded-full border-2 border-kisan-green"></div>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      onClick={() => setShowCamera(false)}
+                      variant="outline"
+                      className="rounded-full p-3 bg-white/20 text-white hover:bg-white/30"
+                      disabled={isCapturing}
+                    >
+                      <X className="h-6 w-6" />
+                    </Button>
+                  </div>
+                  
+                  {/* Upload fallback button */}
+                  <div className="absolute bottom-2 left-0 right-0 flex justify-center">
+                    <Label
+                      htmlFor="camera-fallback-upload"
+                      className="cursor-pointer flex items-center text-xs text-white/70 hover:text-white"
+                    >
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      Camera not working? Upload instead
+                      <Input 
+                        id="camera-fallback-upload" 
+                        type="file" 
+                        className="sr-only" 
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            onImageChange(e);
+                            setShowCamera(false);
+                          }
+                        }}
+                        accept="image/*" 
+                      />
+                    </Label>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <>
-              <div className="relative w-full max-w-md">
-                {/* Video element */}
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  playsInline 
-                  muted
-                  className="max-w-full max-h-[70vh] rounded-lg mx-auto bg-gray-900"
-                  style={{ minHeight: '200px' }}
-                />
-                
-                {/* Force ready countdown */}
-                {forceReadyTimer > 0 && forceReadyTimer < 5 && (
-                  <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
-                    Ready in {5 - forceReadyTimer}s
-                  </div>
-                )}
-                
-                {/* Show "Force Capture" button after 5 seconds */}
-                {forceReadyTimer >= 5 && (
-                  <div className="absolute top-0 left-0 right-0 bg-green-500/80 text-white text-sm py-1 text-center">
-                    Camera Ready
-                  </div>
-                )}
-                
-                {/* Hidden canvas for image processing */}
-                <canvas ref={canvasRef} className="hidden" />
-              </div>
-              
-              <div className="absolute bottom-10 left-0 right-0 flex justify-center space-x-4 p-4">
-                <Button
-                  onClick={switchCamera}
-                  variant="outline"
-                  className="rounded-full p-3 bg-white/20 text-white hover:bg-white/30"
-                  disabled={isCapturing}
-                >
-                  <RotateCcw className="h-6 w-6" />
-                </Button>
-                
-                <Button
-                  onClick={captureImage}
-                  className="rounded-full p-6 bg-white text-kisan-green hover:bg-gray-200"
-                  disabled={isCapturing}
-                >
-                  {isCapturing ? (
-                    <div className="h-12 w-12 rounded-full border-2 border-kisan-green border-t-transparent animate-spin"></div>
-                  ) : (
-                    <div className="h-12 w-12 rounded-full border-2 border-kisan-green"></div>
-                  )}
-                </Button>
-                
-                <Button
-                  onClick={() => setShowCamera(false)}
-                  variant="outline"
-                  className="rounded-full p-3 bg-white/20 text-white hover:bg-white/30"
-                  disabled={isCapturing}
-                >
-                  <X className="h-6 w-6" />
-                </Button>
-              </div>
-              
-              {/* Upload fallback button */}
-              <div className="absolute bottom-2 left-0 right-0 flex justify-center">
-                <Label
-                  htmlFor="camera-fallback-upload"
-                  className="cursor-pointer flex items-center text-xs text-white/70 hover:text-white"
-                >
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Camera not working? Upload instead
-                  <Input 
-                    id="camera-fallback-upload" 
-                    type="file" 
-                    className="sr-only" 
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        onImageChange(e);
-                        setShowCamera(false);
-                      }
-                    }}
-                    accept="image/*" 
-                  />
-                </Label>
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <>
-          {selectedImage ? (
-            // Image preview mode
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-                  <Image className="h-4 w-4 mr-1.5" />
-                  Uploaded Image
-                </Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearImage}
-                  className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  <span className="text-xs">Remove</span>
-                </Button>
-              </div>
-
-              <Card className="border-2 border-kisan-green/20 dark:border-kisan-green/10 overflow-hidden">
-                <CardContent className="p-0 relative">
-                  <img 
-                    src={selectedImage} 
-                    alt="Uploaded Plant" 
-                    className="w-full rounded-md"
-                  />
-                  <div className="absolute bottom-2 right-2 flex space-x-1">
+              {selectedImage ? (
+                // Image preview mode
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                      <ImageLucide className="h-4 w-4 mr-1.5" />
+                      Uploaded Image
+                    </Label>
                     <Button
                       type="button"
+                      variant="ghost"
                       size="sm"
-                      variant="secondary"
-                      className="bg-white/80 hover:bg-white text-gray-700 border border-gray-200"
-                      onClick={() => window.open(selectedImage, '_blank')}
+                      onClick={clearImage}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                     >
-                      <Eye className="h-3.5 w-3.5 mr-1" />
-                      <span className="text-xs">Fullscreen</span>
+                      <X className="h-4 w-4 mr-1" />
+                      <span className="text-xs">Remove</span>
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-              
-              <div className="flex justify-center space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="text-sm"
-                  onClick={toggleCamera}
-                >
-                  <Camera className="h-4 w-4 mr-1.5" />
-                  Take New Photo
-                </Button>
-                
-                <Label
-                  htmlFor="image-upload"
-                  className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
-                >
-                  <Upload className="h-4 w-4 mr-1.5" />
-                  Upload New
-                  <Input 
-                    id="image-upload" 
-                    ref={fileInputRef}
-                    type="file" 
-                    className="sr-only" 
-                    onChange={onImageChange} 
-                    accept="image/*" 
-                  />
-                </Label>
-              </div>
-            </div>
-          ) : (
-            // Upload mode
-            <div className="space-y-3">
-              <Label htmlFor="image-upload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-                <ImageIcon className="h-4 w-4 mr-1.5" />
-                Upload or Capture Plant Image
-              </Label>
-              <div className="mt-2 flex flex-col justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md border-gray-300 dark:border-gray-600">
-                <div className="space-y-2 text-center">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
-                    stroke="currentColor"
-                    fill="none"
-                    viewBox="0 0 48 48"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L40 8m0 0v4"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <div className="flex flex-col sm:flex-row justify-center text-sm text-gray-600 dark:text-gray-300">
+
+                  <Card className="border-2 border-kisan-green/20 dark:border-kisan-green/10 overflow-hidden">
+                    <CardContent className="p-0 relative">
+                      <img 
+                        src={selectedImage} 
+                        alt="Uploaded Plant" 
+                        className="w-full rounded-md"
+                      />
+                      <div className="absolute bottom-2 right-2 flex space-x-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="bg-white/80 hover:bg-white text-gray-700 border border-gray-200"
+                          onClick={() => window.open(selectedImage, '_blank')}
+                        >
+                          <Eye className="h-3.5 w-3.5 mr-1" />
+                          <span className="text-xs">Fullscreen</span>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <div className="flex justify-center space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-sm"
+                      onClick={toggleCamera}
+                    >
+                      <Camera className="h-4 w-4 mr-1.5" />
+                      Take New Photo
+                    </Button>
+                    
                     <Label
                       htmlFor="image-upload"
-                      className="relative cursor-pointer rounded-md font-medium text-kisan-green hover:text-kisan-green-dark dark:text-kisan-gold dark:hover:text-kisan-gold-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-kisan-green mx-2"
+                      className="cursor-pointer inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
                     >
-                      <span className="flex items-center">
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload a file
-                      </span>
+                      <Upload className="h-4 w-4 mr-1.5" />
+                      Upload New
                       <Input 
                         id="image-upload" 
                         ref={fileInputRef}
@@ -472,21 +447,66 @@ export const ImageUploader = ({ onImageChange, selectedImage }: ImageUploaderPro
                         accept="image/*" 
                       />
                     </Label>
-                    <Button
-                      type="button"
-                      onClick={toggleCamera}
-                      className="mt-2 sm:mt-0 mx-2 flex items-center justify-center text-sm font-medium text-white bg-kisan-green hover:bg-kisan-green-dark rounded-md py-2 px-3"
-                    >
-                      <Camera className="mr-2 h-4 w-4" />
-                      Take Picture
-                    </Button>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    PNG, JPG, GIF up to 10MB
-                  </p>
                 </div>
-              </div>
-            </div>
+              ) : (
+                // Upload mode
+                <div className="space-y-3">
+                  <Label htmlFor="image-upload" className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <ImageIcon className="h-4 w-4 mr-1.5" />
+                    Upload or Capture Plant Image
+                  </Label>
+                  <div className="mt-2 flex flex-col justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md border-gray-300 dark:border-gray-600">
+                    <div className="space-y-2 text-center">
+                      <svg
+                        className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
+                        stroke="currentColor"
+                        fill="none"
+                        viewBox="0 0 48 48"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L40 8m0 0v4"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      <div className="flex flex-col sm:flex-row justify-center text-sm text-gray-600 dark:text-gray-300">
+                        <Label
+                          htmlFor="image-upload"
+                          className="relative cursor-pointer rounded-md font-medium text-kisan-green hover:text-kisan-green-dark dark:text-kisan-gold dark:hover:text-kisan-gold-dark focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-kisan-green mx-2"
+                        >
+                          <span className="flex items-center">
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload a file
+                          </span>
+                          <Input 
+                            id="image-upload" 
+                            ref={fileInputRef}
+                            type="file" 
+                            className="sr-only" 
+                            onChange={onImageChange} 
+                            accept="image/*" 
+                          />
+                        </Label>
+                        <Button
+                          type="button"
+                          onClick={toggleCamera}
+                          className="mt-2 sm:mt-0 mx-2 flex items-center justify-center text-sm font-medium text-white bg-kisan-green hover:bg-kisan-green-dark rounded-md py-2 px-3"
+                        >
+                          <Camera className="mr-2 h-4 w-4" />
+                          Take Picture
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        PNG, JPG, GIF up to 10MB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </>
       )}

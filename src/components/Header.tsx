@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, Sun, Moon } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link } from 'react-router-dom';
+import Logo from "@/assets/logo.svg";
 
 interface HeaderProps {
   darkMode: boolean;
@@ -28,12 +29,10 @@ const Header = ({ darkMode, toggleDarkMode, language, setLanguage }: HeaderProps
     <header className="sticky top-0 z-50 bg-white dark:bg-kisan-brown-dark border-b border-gray-200 dark:border-kisan-brown shadow-md">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
-          <div className="w-10 h-10 bg-kisan-green rounded-full flex items-center justify-center">
-            <span className="text-white text-lg font-bold">KD</span>
-          </div>
+          <img src={Logo} alt="Plant Saathi AI Logo" className="w-12 h-12" />
           <div className="font-mukta">
             <h1 className="text-xl font-bold text-kisan-green">
-              किसान कृषि दोस्त
+              प्लांट साथी एआई
             </h1>
             <p className="text-xs text-gray-600 dark:text-gray-300">
               Your AI Farming Assistant
@@ -54,16 +53,16 @@ const Header = ({ darkMode, toggleDarkMode, language, setLanguage }: HeaderProps
                   Home
                 </Link>
                 <Link to="/disease-detection" className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                  {language === "हिंदी" ? "रोग पहचान" : "Disease Detection"}
+                  {language === "hi" ? "रोग पहचान" : "Disease Detection"}
                 </Link>
                 <Link to="/weather" className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                  {language === "हिंदी" ? "मौसम" : "Weather"}
+                  {language === "hi" ? "मौसम" : "Weather"}
                 </Link>
                 <Link to="/crop-info" className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                  {language === "हिंदी" ? "फसल जानकारी" : "Crop Info"}
+                  {language === "hi" ? "फसल जानकारी" : "Crop Info"}
                 </Link>
                 <Link to="/about" className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                  {language === "हिंदी" ? "हमारे बारे में" : "About"}
+                  {language === "hi" ? "हमारे बारे में" : "About"}
                 </Link>
                 
                 <div className="border-t border-gray-200 dark:border-gray-700 my-2 pt-2">
@@ -75,7 +74,7 @@ const Header = ({ darkMode, toggleDarkMode, language, setLanguage }: HeaderProps
                       onChange={(e) => setLanguage(e.target.value)}
                     >
                       {languages.map((lang) => (
-                        <option key={lang.code} value={lang.name}>
+                        <option key={lang.code} value={lang.code}>
                           {lang.name}
                         </option>
                       ))}
@@ -89,7 +88,7 @@ const Header = ({ darkMode, toggleDarkMode, language, setLanguage }: HeaderProps
                   onClick={toggleDarkMode}
                 >
                   {darkMode ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                  {darkMode ? (language === "हिंदी" ? "लाइट मोड" : "Light Mode") : (language === "हिंदी" ? "डार्क मोड" : "Dark Mode")}
+                  {darkMode ? (language === "hi" ? "लाइट मोड" : "Light Mode") : (language === "hi" ? "डार्क मोड" : "Dark Mode")}
                 </Button>
               </div>
             </SheetContent>
@@ -98,19 +97,19 @@ const Header = ({ darkMode, toggleDarkMode, language, setLanguage }: HeaderProps
           <div className="flex items-center space-x-6">
             <nav className="flex items-center space-x-4">
               <Link to="/" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                {language === "हिंदी" ? "होम" : "Home"}
+                {language === "hi" ? "होम" : "Home"}
               </Link>
               <Link to="/disease-detection" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                {language === "हिंदी" ? "रोग पहचान" : "Disease Detection"}
+                {language === "hi" ? "रोग पहचान" : "Disease Detection"}
               </Link>
               <Link to="/weather" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                {language === "हिंदी" ? "मौसम" : "Weather"}
+                {language === "hi" ? "मौसम" : "Weather"}
               </Link>
               <Link to="/crop-info" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                {language === "हिंदी" ? "फसल जानकारी" : "Crop Info"}
+                {language === "hi" ? "फसल जानकारी" : "Crop Info"}
               </Link>
               <Link to="/about" className="text-gray-700 dark:text-gray-200 hover:text-kisan-green dark:hover:text-kisan-gold transition-colors">
-                {language === "हिंदी" ? "हमारे बारे में" : "About"}
+                {language === "hi" ? "हमारे बारे में" : "About"}
               </Link>
             </nav>
             
@@ -121,7 +120,7 @@ const Header = ({ darkMode, toggleDarkMode, language, setLanguage }: HeaderProps
                 onChange={(e) => setLanguage(e.target.value)}
               >
                 {languages.map((lang) => (
-                  <option key={lang.code} value={lang.name}>
+                  <option key={lang.code} value={lang.code}>
                     {lang.name}
                   </option>
                 ))}

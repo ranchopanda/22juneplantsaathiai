@@ -3,7 +3,7 @@ export { imageToBase64 } from './helpers/imageUtils';
 export { storeAnalysisData, getAnalysisHistory } from './storage/analysisStorage';
 
 // Main service functions - export from aiService
-export {
+export { 
   analyzePlantDisease,
   getQuickPlantAnalysis
 } from './services/ai/aiService';

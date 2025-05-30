@@ -1,6 +1,6 @@
-
 import { Link } from 'react-router-dom';
 import { Phone, Mail, Instagram, Facebook, Twitter } from 'lucide-react';
+import Logo from "@/assets/logo.svg";
 
 const Footer = () => {
   return (
@@ -8,8 +8,9 @@ const Footer = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
+            <img src={Logo} alt="Plant Saathi AI Logo" className="w-16 h-16 mb-2" />
             <h3 className="text-xl font-semibold text-kisan-green dark:text-kisan-gold mb-4">
-              किसान कृषि दोस्त
+              प्लांट साथी एआई
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
               Empowering Indian farmers with AI-powered solutions for better crop management and productivity.
@@ -96,7 +97,7 @@ const Footer = () => {
         
         <div className="border-t border-gray-200 dark:border-kisan-brown mt-8 pt-6 text-center">
           <p className="text-gray-600 dark:text-gray-300 text-sm">
-            © 2024 किसान कृषि दोस्त AI. All rights reserved.
+            © 2024 प्लांट साथी एआई. All rights reserved.
           </p>
         </div>
       </div>
