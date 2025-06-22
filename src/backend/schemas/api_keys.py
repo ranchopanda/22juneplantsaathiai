@@ -16,4 +16,7 @@ class APIKeyResponse(BaseModel):
     revoked_at: Optional[str]
     last_used_at: Optional[str]
     permissions: List[str]
-    api_key: str = None  # Only present on creation 
+    daily_usage: dict
+    quota_per_day: int
+    api_key: Optional[str] = None  # Only present on creation
+    api_key_raw: Optional[str] = None # For frontend testing convenience 

@@ -1,42 +1,63 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001';
-
-function useListKeys() {
+function useListKeys(adminPassword: string) {
   return useQuery({
     queryKey: ["api-keys"],
     queryFn: async () => {
-      const res = await fetch(`${API_URL}/api/admin/api-keys`);
+      const res = await fetch(`/api/admin/api-keys`, {
+        headers: {
+          "Authorization": `Bearer ${adminPassword}`
+        }
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
       return res.json();
     },
   });
 }
 
-function useCreateKey() {
+function useCreateKey(adminPassword: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: { company_name: string; permissions?: string[] }) => {
-      const res = await fetch(`${API_URL}/api/admin/api-keys`, {
+      const res = await fetch(`/api/admin/api-keys`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${adminPassword}`
+        },
         body: JSON.stringify(data),
       });
+      if (!res.ok) {
+        // It's helpful to read the error response from the server
+        const errorData = await res.text();
+        throw new Error(`Failed to create key: ${errorData}`);
+      }
       return res.json();
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["api-keys"] }),
   });
 }
 
-function useRevokeKey() {
+function useRevokeKey(adminPassword: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await fetch(`${API_URL}/api/admin/api-keys/revoke`, {
+      const res = await fetch(`/api/admin/api-keys/revoke`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${adminPassword}`
+        },
         body: JSON.stringify({ id }),
       });
+      if (!res.ok) {
+        const errorData = await res.text();
+        throw new Error(`Failed to revoke key: ${errorData}`);
+      }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["api-keys"] }),
   });
@@ -47,6 +68,7 @@ function PredictTest() {
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,9 +78,23 @@ function PredictTest() {
     setLoading(true);
     const formData = new FormData();
     formData.append("file", file);
+    
+    // Retrieve a valid API key to use for the test
+    const keys = queryClient.getQueryData<any[]>(["api-keys"]);
+    const apiKey = keys?.find(k => !k.revoked)?.api_key_raw; // You need to return the raw key on creation for this to work
+    
+    if (!apiKey) {
+        setError("No active API key found to test with. Please create one.");
+        setLoading(false);
+        return;
+    }
+
     try {
-      const res = await fetch(`${API_URL}/predict`, {
+      const res = await fetch(`/predict`, {
         method: "POST",
+        headers: {
+            "x-api-key": apiKey,
+        },
         body: formData,
       });
       if (!res.ok) throw new Error(await res.text());
@@ -90,23 +126,113 @@ function PredictTest() {
   );
 }
 
+function UsageCalendar({ daily_usage, quota }) {
+  const sortedDates = Object.keys(daily_usage).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+
+  return (
+    <div className="mt-4">
+      <h4 className="font-bold">Usage History</h4>
+      <div className="max-h-60 overflow-y-auto border rounded p-2 mt-2">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-left">
+              <th>Date</th>
+              <th>Usage</th>
+              <th>Overage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedDates.map(date => {
+              const usage = daily_usage[date].count;
+              const overage = Math.max(0, usage - quota);
+              return (
+                <tr key={date} className={overage > 0 ? "bg-red-100" : ""}>
+                  <td>{date}</td>
+                  <td>{usage} / {quota}</td>
+                  <td className="font-bold text-red-600">{overage > 0 ? `+${overage}` : "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminApiKeyPage() {
-  const { data: keys, isLoading } = useListKeys();
-  const createKey = useCreateKey();
-  const revokeKey = useRevokeKey();
+  const [adminPassword, setAdminPassword] = useState<string>("");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Hooks now take adminPassword as a parameter
+  const { data: keys, isLoading, error } = useListKeys(adminPassword);
+  const createKey = useCreateKey(adminPassword);
+  const revokeKey = useRevokeKey(adminPassword);
   const [showModal, setShowModal] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const [newKey, setNewKey] = useState<string | null>(null);
   const [editQuotaId, setEditQuotaId] = useState<string | null>(null);
   const [editQuotaValue, setEditQuotaValue] = useState<number>(100);
   const [quotaLoading, setQuotaLoading] = useState(false);
+  const [historyModalKey, setHistoryModalKey] = useState<any>(null);
+
+  // Handle authentication error without causing re-render loop
+  if (error && error.message.includes("401") && authError !== "Unauthorized") {
+    setAuthError("Unauthorized");
+  }
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto">
+        <h2 className="text-2xl font-bold mb-4">Admin Access Required</h2>
+        <div className="bg-white p-6 rounded shadow-md w-96">
+          <h3 className="text-lg font-bold mb-2">Enter Admin Password</h3>
+          <input
+            type="password"
+            className="border p-2 w-full mb-4"
+            value={adminPassword}
+            onChange={e => setAdminPassword(e.target.value)}
+            placeholder="Password"
+          />
+          <button
+            className="btn btn-primary w-full"
+            onClick={() => {
+              setIsAuthenticated(true);
+              setAuthError(null); // Reset error on new attempt
+            }}
+          >
+            Submit
+          </button>
+          {authError && (
+            <div className="text-red-600 mt-2">Invalid password. Please try again.</div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = await createKey.mutateAsync({ company_name: companyName });
-    setNewKey(result.api_key);
-    setShowModal(false);
-    setCompanyName("");
+    try {
+      const result = await createKey.mutateAsync({ company_name: companyName });
+      setNewKey(result.api_key);
+      setShowModal(false);
+      setCompanyName("");
+      toast({
+        title: "Success",
+        description: "API Key created successfully.",
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error("Failed to create key:", error);
+      toast({
+        title: "Error Creating Key",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditQuota = (id: string, current: number) => {
@@ -115,20 +241,44 @@ export default function AdminApiKeyPage() {
   };
 
   const handleSaveQuota = async () => {
+    if (!editQuotaId) return;
     setQuotaLoading(true);
-    await fetch(`${API_URL}/api/admin/api-keys/quota`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: editQuotaId, quota_per_day: editQuotaValue }),
-    });
-    setEditQuotaId(null);
-    setQuotaLoading(false);
-    // Refresh keys
-    window.location.reload();
+    try {
+      const res = await fetch(`/api/admin/api-keys/quota`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${adminPassword}`
+        },
+        body: JSON.stringify({ id: editQuotaId, quota_per_day: editQuotaValue }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.text();
+        throw new Error(`Failed to update quota: ${errorData}`);
+      }
+      
+      // Manually update the query cache to reflect the change immediately
+      // without needing a full reload.
+      const queryClient = useQueryClient();
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+
+    } catch (error) {
+      console.error(error);
+      // Optionally, show an error toast to the user
+    } finally {
+      setEditQuotaId(null);
+      setQuotaLoading(false);
+    }
   };
 
+  const getTodaysUsage = (key: any) => {
+    const today = new Date().toISOString().split('T')[0];
+    return key.daily_usage?.[today]?.count || 0;
+  }
+
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Company API Keys</h2>
       <button
         className="btn btn-primary mb-4"
@@ -141,24 +291,28 @@ export default function AdminApiKeyPage() {
           <tr>
             <th>Company</th>
             <th>Status</th>
-            <th>Created</th>
             <th>Last Used</th>
-            <th>Usage</th>
+            <th>Today's Usage</th>
             <th>Rate Limit</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           {isLoading ? (
-            <tr><td colSpan={7}>Loading...</td></tr>
+            <tr><td colSpan={6}>Loading...</td></tr>
           ) : (
-            keys?.map((key: any) => (
+            keys?.map((key: any) => {
+              const usageToday = getTodaysUsage(key);
+              const overageToday = Math.max(0, usageToday - (key.quota_per_day ?? 100));
+              return (
               <tr key={key.id}>
                 <td>{key.company_name}</td>
                 <td>{key.revoked ? "Revoked" : "Active"}</td>
-                <td>{key.created_at ? new Date(key.created_at).toLocaleString() : "—"}</td>
                 <td>{key.last_used_at ? new Date(key.last_used_at).toLocaleString() : "—"}</td>
-                <td>{key.usage_today ?? 0}/{key.quota_per_day ?? 100} used today</td>
+                <td className={overageToday > 0 ? "text-red-600 font-bold" : ""}>
+                  {usageToday} / {key.quota_per_day ?? 100}
+                  {overageToday > 0 && ` (+${overageToday} over)`}
+                </td>
                 <td>
                   {key.quota_per_day ?? 100}
                   <button className="ml-2 btn btn-xs btn-secondary" onClick={() => handleEditQuota(key.id, key.quota_per_day ?? 100)}>
@@ -166,6 +320,9 @@ export default function AdminApiKeyPage() {
                   </button>
                 </td>
                 <td>
+                  <button className="btn btn-xs btn-info mr-2" onClick={() => setHistoryModalKey(key)}>
+                    History
+                  </button>
                   {!key.revoked && (
                     <button
                       onClick={() => revokeKey.mutate(key.id)}
@@ -176,7 +333,7 @@ export default function AdminApiKeyPage() {
                   )}
                 </td>
               </tr>
-            ))
+            )})
           )}
         </tbody>
       </table>
@@ -252,7 +409,18 @@ export default function AdminApiKeyPage() {
           </div>
         </div>
       )}
+      {historyModalKey && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-md w-[500px]">
+            <h3 className="text-lg font-bold mb-2">Usage History for {historyModalKey.company_name}</h3>
+            <UsageCalendar daily_usage={historyModalKey.daily_usage} quota={historyModalKey.quota_per_day} />
+            <div className="flex justify-end mt-4">
+               <button className="btn btn-secondary" onClick={() => setHistoryModalKey(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
       <PredictTest />
     </div>
   );
-} 
+}

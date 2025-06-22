@@ -17,7 +17,7 @@ def create_api_key(data: APIKeyCreateRequest, user=Depends(admin_only)):
     key, hashed = generate_api_key()
     # Replace with Cloudinary logic
     doc = store_api_key(None, data.company_name, hashed, data.permissions)
-    return {**doc, "api_key": key}
+    return {**doc, "api_key": key, "api_key_raw": key}
 
 @router.get("/api/admin/api-keys", response_model=List[APIKeyResponse])
 def list_keys(user=Depends(admin_only)):
