@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import SuccessStories from "./pages/SuccessStories";
 import YieldPrediction from "./pages/YieldPrediction";
 import SoilAnalysis from "./pages/SoilAnalysis";
+import AdminApiKeyPage from "./pages/admin/api-keys";
 import { ThemeProvider } from '@/components/theme-provider';
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => {
               <Route path="/success-stories" element={<SuccessStories />} />
               <Route path="/yield-prediction" element={<YieldPrediction />} />
               <Route path="/soil-analysis" element={<SoilAnalysis />} />
+              <Route path="/admin/api-keys" element={<AdminApiKeyPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
