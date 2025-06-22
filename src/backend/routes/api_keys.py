@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from google.cloud import firestore
-from schemas.api_keys import APIKeyCreateRequest, APIKeyRevokeRequest, APIKeyResponse
-from utils.api_key_utils import generate_api_key, store_api_key, get_api_keys, revoke_api_key
+from ..schemas.api_keys import APIKeyCreateRequest, APIKeyRevokeRequest, APIKeyResponse
+from ..utils.api_key_utils import generate_api_key, store_api_key, get_api_keys, revoke_api_key
 from typing import List
 
 router = APIRouter()

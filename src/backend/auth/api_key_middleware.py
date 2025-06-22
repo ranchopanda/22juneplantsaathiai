@@ -1,6 +1,6 @@
 from fastapi import Request, HTTPException, Depends
 from google.cloud import firestore
-from utils.api_key_utils import hash_api_key, find_active_api_key, check_and_update_quota, log_api_usage
+from ..utils.api_key_utils import hash_api_key, find_active_api_key, check_and_update_quota, log_api_usage
 from datetime import datetime
 
 db = firestore.Client()
