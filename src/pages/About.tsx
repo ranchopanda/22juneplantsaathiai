@@ -18,6 +18,7 @@ const About = () => {
     { label: "Govt. Schemes", path: "#whats-next" },
     { label: "Market Prices", path: "#whats-next" },
     { label: "Research Papers", path: "#whats-next" },
+    { label: "Admin", path: "/admin/api-keys" },
   ];
 
   const sectionLinks = [

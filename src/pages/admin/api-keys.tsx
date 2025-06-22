@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 function useListKeys() {
   return useQuery(["api-keys"], async () => {
-    const res = await fetch("/api/admin/api-keys");
+    const res = await fetch(`${API_URL}/api/admin/api-keys`);
     return res.json();
   });
 }
@@ -12,7 +14,7 @@ function useCreateKey() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: { company_name: string; permissions?: string[] }) => {
-      const res = await fetch("/api/admin/api-keys", {
+      const res = await fetch(`${API_URL}/api/admin/api-keys`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -27,7 +29,7 @@ function useRevokeKey() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await fetch("/api/admin/api-keys/revoke", {
+      await fetch(`${API_URL}/api/admin/api-keys/revoke`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),

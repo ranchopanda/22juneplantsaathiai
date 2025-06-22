@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 3000,
     open: true,
+    proxy: {
+      '/api': 'http://localhost:8000',
+    },
   },
   plugins: [
     react(),
