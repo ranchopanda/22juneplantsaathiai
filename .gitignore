@@ -30,3 +30,8 @@ dist-ssr
 
 # Local Netlify folder
 .netlify
+
+CLOUDINARY_CLOUD_NAME=dguetbdft
+CLOUDINARY_API_KEY=161915798873267
+CLOUDINARY_API_SECRET=w5n3M585Yxvl-S473nJT19iU58I
+MASTER_API_KEY=test_master_key
