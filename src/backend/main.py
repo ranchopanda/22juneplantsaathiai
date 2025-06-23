@@ -340,7 +340,9 @@ async def predict(
     api_key_info: dict = Depends(verify_api_key)
 ):
     # Apply dynamic rate limiting based on the key
-    limiter.limit(get_rate_limit_for_key(api_key_info))(predict)
+    # Use a static name to avoid module attribute issues
+    limit_str = get_rate_limit_for_key(api_key_info)
+    limiter.limit(limit_str, key_func=lambda: "predict_endpoint")(predict)
     
     # Log request
     partner_id = api_key_info.get("partner_id", "unknown")
@@ -736,7 +738,7 @@ def regenerate_api_key(key_id: str, is_authenticated: bool = Depends(verify_mast
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        status_code=500,
         content={"detail": "An unexpected error occurred"}
     )
 
