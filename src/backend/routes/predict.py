@@ -1,6 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, Header, Depends
+from fastapi import APIRouter, UploadFile, File, Header
 from fastapi.responses import JSONResponse
-from typing import Annotated
 from ..utils.api_key_utils import track_and_get_api_key
 
 router = APIRouter()
@@ -8,14 +7,21 @@ router = APIRouter()
 @router.post("/predict")
 async def predict(
     file: UploadFile = File(...),
-    x_api_key: Annotated[str, Header()] = None,
-    api_key_data: dict = Depends(track_and_get_api_key)
+    x_api_key: str = Header(default=None),
+    authorization: str = Header(default=None),
 ):
-    # The 'track_and_get_api_key' dependency already handles validation and usage tracking.
-    # If the code reaches here, the key is valid and usage has been recorded.
-    
-    # You can optionally use api_key_data if you need info about the calling company
-    # print(f"Request from {api_key_data['company_name']}")
+    # Prefer x-api-key, fallback to Bearer
+    api_key = x_api_key
+    if not api_key and authorization and authorization.lower().startswith("bearer "):
+        api_key = authorization.split(" ", 1)[1]
+    if not api_key:
+        return JSONResponse(status_code=401, content={"detail": "API key missing"})
+
+    # Validate key
+    try:
+        api_key_data = track_and_get_api_key(api_key)
+    except Exception as e:
+        return JSONResponse(status_code=403, content={"detail": str(e)})
 
     # TODO: Integrate real AI model here
     # For now, return a mock response
