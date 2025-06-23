@@ -16,6 +16,7 @@ import YieldPrediction from "./pages/YieldPrediction";
 import SoilAnalysis from "./pages/SoilAnalysis";
 import AdminApiKeyPage from "./pages/admin/api-keys";
 import { ThemeProvider } from '@/components/theme-provider';
+import BottomNavBar from '@/components/CustomFooter';
 
 const queryClient = new QueryClient();
 
@@ -31,18 +32,21 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/disease-detection" element={<DiseaseDetection />} />
-              <Route path="/weather" element={<Weather />} />
-              <Route path="/crop-info" element={<CropInfo />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/success-stories" element={<SuccessStories />} />
-              <Route path="/yield-prediction" element={<YieldPrediction />} />
-              <Route path="/soil-analysis" element={<SoilAnalysis />} />
-              <Route path="/admin/api-keys" element={<AdminApiKeyPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <div className="flex flex-col min-h-screen">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/disease-detection" element={<DiseaseDetection />} />
+                <Route path="/weather" element={<Weather />} />
+                <Route path="/crop-info" element={<CropInfo />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/success-stories" element={<SuccessStories />} />
+                <Route path="/yield-prediction" element={<YieldPrediction />} />
+                <Route path="/soil-analysis" element={<SoilAnalysis />} />
+                <Route path="/admin/api-keys" element={<AdminApiKeyPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <BottomNavBar />
+            </div>
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

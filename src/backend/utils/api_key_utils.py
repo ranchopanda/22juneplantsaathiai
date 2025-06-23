@@ -13,7 +13,7 @@ import os
 COLLECTION_NAME = "company_api_keys"
 USAGE_LOGS_COLLECTION = "api_usage_logs"
 
-DEFAULT_QUOTA_PER_DAY = 100
+DEFAULT_QUOTA_PER_DAY = 50
 
 CLOUDINARY_API_KEYS_FILE = "api-keys.json"
 
@@ -79,7 +79,7 @@ def upload_api_keys_to_cloudinary(api_keys: List[dict]):
         **options
     )
 
-def store_api_key(_, company_name: str, api_key_hash: str, permissions=None, quota_per_day=None):
+def store_api_key(_, company_name: str, api_key_hash: str, permissions=None, quota_per_day=None, expires_at=None):
     api_keys = download_api_keys_from_cloudinary()
     new_key = {
         "id": secrets.token_hex(8),
@@ -91,7 +91,8 @@ def store_api_key(_, company_name: str, api_key_hash: str, permissions=None, quo
         "last_used_at": None,
         "permissions": permissions or [],
         "quota_per_day": quota_per_day or DEFAULT_QUOTA_PER_DAY,
-        "daily_usage": {}
+        "daily_usage": {},
+        "expires_at": expires_at,
     }
     api_keys.append(new_key)
     upload_api_keys_to_cloudinary(api_keys)
@@ -174,6 +175,16 @@ def track_and_get_api_key(api_key: str):
         if key["api_key_hash"] == hashed_key:
             if key.get("revoked"):
                 raise HTTPException(status_code=403, detail="API key has been revoked")
+            # Expiry check
+            expires_at = key.get("expires_at")
+            if expires_at:
+                from datetime import datetime, timezone
+                try:
+                    dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+                    if datetime.now(timezone.utc) > dt:
+                        raise HTTPException(status_code=403, detail="API key has expired")
+                except Exception:
+                    pass  # If parsing fails, ignore expiry
             key_to_update = key
             break
 

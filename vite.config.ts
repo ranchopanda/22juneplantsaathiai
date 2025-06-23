@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: mode === 'development',
     minify: 'terser',
     chunkSizeWarningLimit: 1600,
   },

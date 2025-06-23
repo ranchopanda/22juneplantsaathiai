@@ -1,5 +1,11 @@
 fastapi
-google-cloud-firestore
 uvicorn
 python-dotenv
-pydantic 
+pydantic
+requests
+pillow
+redis
+firebase-admin
+prometheus-client
+python-json-logger
+slowapi

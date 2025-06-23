@@ -22,7 +22,7 @@ function useListKeys(adminPassword: string) {
 function useCreateKey(adminPassword: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { company_name: string; permissions?: string[] }) => {
+    mutationFn: async (data: { company_name: string; permissions?: string[]; expires_at?: string }) => {
       const res = await fetch(`/api/admin/api-keys`, {
         method: "POST",
         headers: {
@@ -177,6 +177,7 @@ export default function AdminApiKeyPage() {
   const [editQuotaValue, setEditQuotaValue] = useState<number>(100);
   const [quotaLoading, setQuotaLoading] = useState(false);
   const [historyModalKey, setHistoryModalKey] = useState<any>(null);
+  const [expiryDate, setExpiryDate] = useState<string>("");
 
   // Handle authentication error without causing re-render loop
   if (error && error.message.includes("401") && authError !== "Unauthorized") {
@@ -216,10 +217,11 @@ export default function AdminApiKeyPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const result = await createKey.mutateAsync({ company_name: companyName });
+      const result = await createKey.mutateAsync({ company_name: companyName, expires_at: expiryDate ? new Date(expiryDate).toISOString() : null });
       setNewKey(result.api_key);
       setShowModal(false);
       setCompanyName("");
+      setExpiryDate("");
       toast({
         title: "Success",
         description: "API Key created successfully.",
@@ -294,46 +296,52 @@ export default function AdminApiKeyPage() {
             <th>Last Used</th>
             <th>Today's Usage</th>
             <th>Rate Limit</th>
+            <th>Expiry</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           {isLoading ? (
-            <tr><td colSpan={6}>Loading...</td></tr>
-          ) : (
-            keys?.map((key: any) => {
+            <tr><td colSpan={7}>Loading...</td></tr>
+          ) : Array.isArray(keys) ? (
+            keys.map((key: any) => {
               const usageToday = getTodaysUsage(key);
               const overageToday = Math.max(0, usageToday - (key.quota_per_day ?? 100));
+              const expired = key.expires_at && new Date() > new Date(key.expires_at);
               return (
-              <tr key={key.id}>
-                <td>{key.company_name}</td>
-                <td>{key.revoked ? "Revoked" : "Active"}</td>
-                <td>{key.last_used_at ? new Date(key.last_used_at).toLocaleString() : "—"}</td>
-                <td className={overageToday > 0 ? "text-red-600 font-bold" : ""}>
-                  {usageToday} / {key.quota_per_day ?? 100}
-                  {overageToday > 0 && ` (+${overageToday} over)`}
-                </td>
-                <td>
-                  {key.quota_per_day ?? 100}
-                  <button className="ml-2 btn btn-xs btn-secondary" onClick={() => handleEditQuota(key.id, key.quota_per_day ?? 100)}>
-                    Edit
-                  </button>
-                </td>
-                <td>
-                  <button className="btn btn-xs btn-info mr-2" onClick={() => setHistoryModalKey(key)}>
-                    History
-                  </button>
-                  {!key.revoked && (
-                    <button
-                      onClick={() => revokeKey.mutate(key.id)}
-                      className="btn btn-sm btn-danger"
-                    >
-                      Revoke
+                <tr key={key.id} className={expired ? "bg-red-100" : ""}>
+                  <td>{key.company_name}</td>
+                  <td>{key.revoked ? "Revoked" : expired ? "Expired" : "Active"}</td>
+                  <td>{key.last_used_at ? new Date(key.last_used_at).toLocaleString() : "—"}</td>
+                  <td className={overageToday > 0 ? "text-red-600 font-bold" : ""}>
+                    {usageToday} / {key.quota_per_day ?? 100}
+                    {overageToday > 0 && ` (+${overageToday} over)`}
+                  </td>
+                  <td>
+                    {key.quota_per_day ?? 100}
+                    <button className="ml-2 btn btn-xs btn-secondary" onClick={() => handleEditQuota(key.id, key.quota_per_day ?? 100)}>
+                      Edit
                     </button>
-                  )}
-                </td>
-              </tr>
-            )})
+                  </td>
+                  <td>{key.expires_at ? new Date(key.expires_at).toLocaleDateString() : "—"}</td>
+                  <td>
+                    <button className="btn btn-xs btn-info mr-2" onClick={() => setHistoryModalKey(key)}>
+                      History
+                    </button>
+                    {!key.revoked && !expired && (
+                      <button
+                        onClick={() => revokeKey.mutate(key.id)}
+                        className="btn btn-sm btn-danger"
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })
+          ) : (
+            <tr><td colSpan={7} className="text-red-600">Failed to load API keys.</td></tr>
           )}
         </tbody>
       </table>
@@ -380,6 +388,13 @@ export default function AdminApiKeyPage() {
               value={companyName}
               onChange={e => setCompanyName(e.target.value)}
               required
+            />
+            <input
+              type="date"
+              className="border p-2 w-full mb-4"
+              value={expiryDate}
+              onChange={e => setExpiryDate(e.target.value)}
+              placeholder="Expiry Date (optional)"
             />
             <div className="flex justify-end">
               <button
