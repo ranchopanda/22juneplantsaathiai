@@ -745,6 +745,18 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def startup_event():
     logger.info("Starting Plant Disease Detection API")
     
+    # Log critical environment variables for debugging
+    logger.info(f"Environment: CLOUDINARY_URL={'set' if os.getenv('CLOUDINARY_URL') else 'not set'}")
+    logger.info(f"Environment: ADMIN_PASSWORD={'set' if os.getenv('ADMIN_PASSWORD') else 'not set'}")
+    logger.info(f"Environment: MASTER_API_KEY={'set' if os.getenv('MASTER_API_KEY') else 'not set'}")
+    
+    # Check Cloudinary dependency
+    try:
+        import cloudinary
+        logger.info("Cloudinary library imported successfully")
+    except Exception as e:
+        logger.error(f"Cloudinary library import failed: {str(e)}")
+    
     # Initialize active keys metric
     if db:
         try:
