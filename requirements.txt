@@ -9,3 +9,4 @@ firebase-admin
 prometheus-client
 python-json-logger
 slowapi
+python-multipart
