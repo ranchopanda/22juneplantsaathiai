@@ -405,7 +405,7 @@ async def predict(
 
 # --- Health Check ---
 @app.get("/status")
-def status():
+def health_status():
     health_data = {
         "status": "ok",
         "timestamp": datetime.utcnow().isoformat(),
