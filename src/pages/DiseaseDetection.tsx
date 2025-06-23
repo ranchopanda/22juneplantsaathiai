@@ -135,7 +135,7 @@ const DiseaseDetection = () => {
 
               <Button
                 className="w-full mt-4 md:mt-6 bg-kisan-green hover:bg-kisan-green-dark text-white text-lg h-12 md:h-10"
-                onClick={handleAnalysis}
+                onClick={() => handleAnalysis()}
                 disabled={loading || !selectedImage}
               >
                 {loading ? (
