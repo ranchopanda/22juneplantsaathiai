@@ -56,28 +56,46 @@ def hash_api_key(key: str) -> str:
 def download_api_keys_from_cloudinary() -> List[dict]:
     try:
         options = _get_cloudinary_options()
-        resource = cloudinary.api.resource(CLOUDINARY_API_KEYS_FILE, resource_type="raw", **options)
+        resource = cloudinary.api.resource(CLOUDINARY_API_KEYS_FILE, resource_type="raw", timeout=30, **options)
         url = resource["secure_url"]
         import requests
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=10)
         if resp.status_code == 200:
+            print(f"Successfully downloaded API keys from Cloudinary: {url}")
             return json.loads(resp.text)
-        return []
-    except Exception:
+        else:
+            print(f"Failed to download API keys from Cloudinary: Status code {resp.status_code}")
+            with open("cloudinary_download_error.log", "a") as log_file:
+                log_file.write(f"{datetime.utcnow().isoformat()} - Status code: {resp.status_code}\n")
+            return []
+    except Exception as e:
+        print(f"Error downloading API keys from Cloudinary: {str(e)}")
+        with open("cloudinary_download_error.log", "a") as log_file:
+            log_file.write(f"{datetime.utcnow().isoformat()} - Error: {str(e)}\n")
         return []
 
 def upload_api_keys_to_cloudinary(api_keys: List[dict]):
     options = _get_cloudinary_options()
     data = json.dumps(api_keys, indent=2)
     file_obj = io.BytesIO(data.encode())
-    cloudinary.uploader.upload_large(
-        file_obj,
-        public_id=CLOUDINARY_API_KEYS_FILE,
-        resource_type="raw",
-        overwrite=True,
-        format="json",
-        **options
-    )
+    try:
+        result = cloudinary.uploader.upload_large(
+            file_obj,
+            public_id=CLOUDINARY_API_KEYS_FILE,
+            resource_type="raw",
+            overwrite=True,
+            format="json",
+            timeout=30,  # Set a timeout to prevent hanging
+            **options
+        )
+        print(f"Successfully uploaded API keys to Cloudinary: {result.get('public_id')}")
+        return result
+    except Exception as e:
+        print(f"Error uploading API keys to Cloudinary: {str(e)}")
+        # Log the error for debugging
+        with open("cloudinary_upload_error.log", "a") as log_file:
+            log_file.write(f"{datetime.utcnow().isoformat()} - Error: {str(e)}\n")
+        raise Exception(f"Failed to upload API keys to Cloudinary: {str(e)}")
 
 def store_api_key(_, company_name: str, api_key_hash: str, permissions=None, quota_per_day=None, expires_at=None):
     api_keys = download_api_keys_from_cloudinary()
