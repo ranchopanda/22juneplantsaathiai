@@ -181,16 +181,23 @@ class APIKeyCreate(BaseModel):
     custom_key_value: Optional[str] = None
 
 async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    import hashlib
     try:
+        # Debug logging
+        logger.info(f"[DEBUG] Bearer credentials: {credentials.credentials}")
+        logger.info(f"[DEBUG] Bearer hash: {hashlib.sha256(credentials.credentials.encode()).hexdigest()}")
         # Check if this is the master key
         if credentials.credentials == MASTER_API_KEY:
+            logger.info("[DEBUG] Master API key used, authentication successful.")
             return {"partner_id": "admin", "rate_limit_day": 10000}
         
         # Check cache first
         if redis_client:
             cached_key = redis_client.get(f"api_key:{credentials.credentials}")
+            logger.info(f"[DEBUG] Redis cache lookup: {cached_key}")
             if cached_key:
                 key_data = json.loads(cached_key)
+                logger.info(f"[DEBUG] Redis cache hit, key data: {key_data}")
                 return key_data
         
         # Query Firestore
@@ -198,11 +205,11 @@ async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(bea
             keys_ref = db.collection('api_keys')
             query = keys_ref.where('key', '==', credentials.credentials).where('is_active', '==', True).limit(1)
             results = query.get()
-            
+            logger.info(f"[DEBUG] Firestore query results: {results}")
             for doc in results:
                 key_data = doc.to_dict()
                 key_data['key_id'] = doc.id
-                
+                logger.info(f"[DEBUG] Firestore key data: {key_data}")
                 # Cache the result
                 if redis_client:
                     redis_client.setex(
@@ -210,9 +217,9 @@ async def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(bea
                         300,  # Cache for 5 minutes
                         json.dumps(key_data)
                     )
-                    
                 return key_data
         
+        logger.info("[DEBUG] API key not found, raising 401.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, 
             detail="Invalid API Key"
@@ -330,80 +337,6 @@ async def log_api_usage(partner_id, key_id, endpoint):
         
     except Exception as e:
         logger.error(f"Error logging API usage: {str(e)}")
-
-# --- /predict Endpoint ---
-@app.post("/predict", response_model=PredictResponse)
-async def predict(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    image: UploadFile = File(...),
-    api_key_info: dict = Depends(verify_api_key)
-):
-    # Apply dynamic rate limiting based on the key
-    # Use a static name to avoid module attribute issues
-    limit_str = get_rate_limit_for_key(api_key_info)
-    limiter.limit(limit_str, key_func=lambda: "predict_endpoint")(predict)
-    
-    # Log request
-    partner_id = api_key_info.get("partner_id", "unknown")
-    key_id = api_key_info.get("key_id", "unknown")
-    logger.info(f"Predict request from partner: {partner_id}, key: {key_id}")
-    
-    # Add background task to log usage
-    background_tasks.add_task(log_api_usage, partner_id, key_id, "predict")
-    
-    # Validate image
-    if image.content_type not in ["image/jpeg", "image/jpg", "image/png"]:
-        logger.warning(f"Invalid image type: {image.content_type}")
-        raise HTTPException(status_code=400, detail="Invalid image type. Only JPEG/PNG supported.")
-    
-    try:
-        img_bytes = await image.read()
-        
-        # Check cache first
-        cache_key = get_cache_key(img_bytes, partner_id)
-        cached_result = await get_cached_prediction(cache_key)
-        if cached_result:
-            logger.info(f"Cache hit for prediction: {partner_id}")
-            return cached_result
-        
-        # Process image if not in cache
-        img = Image.open(io.BytesIO(img_bytes))
-        # Optionally: preprocess, save, or log the image
-    except Exception as e:
-        logger.error(f"Image processing error: {str(e)}")
-        raise HTTPException(status_code=400, detail="Invalid image file.")
-
-    # --- ML Model Inference ---
-    # TODO: Integrate your real model here
-    # For now, return a sample response
-    result = PredictResponse(
-        disease="Early Blight",
-        confidence=0.85,
-        severity="High",
-        stage="Moderate",
-        yield_impact="20-40%",
-        spread_risk="Medium",
-        recovery="Medium",
-        symptoms=[
-            "Dark brown spots with concentric rings on leaves.",
-            "Yellowing of leaf tissue around the spots.",
-            "Spots starting on older leaves and spreading upwards."
-        ],
-        action_plan=ActionPlan(
-            immediate="Remove and destroy infected leaves to prevent spread.",
-            short_term="Apply appropriate fungicide treatments."
-        ),
-        treatments=Treatments(
-            organic="Neem Oil: 5ml/L water. Spray every 7-10 days.",
-            chemical="Mancozeb: 2g/L water. Spray every 7-10 days. Avoid flowering stage."
-        )
-    )
-    
-    # Cache the result
-    await cache_prediction(cache_key, result.dict())
-    
-    return result
 
 # --- Health Check ---
 @app.get("/status")
