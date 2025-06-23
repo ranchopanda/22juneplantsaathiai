@@ -6,7 +6,7 @@ import cloudinary.uploader
 import cloudinary.api
 from typing import List, Optional
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import HTTPException
 import os
 
@@ -188,6 +188,11 @@ def track_and_get_api_key(api_key: str):
     hashed_key = hash_api_key(api_key)
     api_keys = download_api_keys_from_cloudinary()
     
+    # Debug logging
+    print(f"[DEBUG] Checking API key: {api_key}")
+    print(f"[DEBUG] Hashed API key: {hashed_key}")
+    print(f"[DEBUG] Available hashes: {[key['api_key_hash'] for key in api_keys]}")
+    
     key_to_update = None
     for key in api_keys:
         if key["api_key_hash"] == hashed_key:
@@ -196,7 +201,6 @@ def track_and_get_api_key(api_key: str):
             # Expiry check
             expires_at = key.get("expires_at")
             if expires_at:
-                from datetime import datetime, timezone
                 try:
                     dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
                     if datetime.now(timezone.utc) > dt:
