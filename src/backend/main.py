@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
-load_dotenv()
-
 import os
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
+
 print("DEBUG: ADMIN_PASSWORD =", os.environ.get("ADMIN_PASSWORD"))
 
 import os

@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+import os
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env'))
 import secrets
 import hashlib
 import json
@@ -8,7 +11,6 @@ from typing import List, Optional
 import io
 from datetime import datetime, timezone
 from fastapi import HTTPException
-import os
 
 COLLECTION_NAME = "company_api_keys"
 USAGE_LOGS_COLLECTION = "api_usage_logs"
@@ -183,6 +185,7 @@ def update_quota(_, key_id: str, new_quota: int):
 
 def track_and_get_api_key(api_key: str):
     if not api_key:
+        print("[🔒] No API key provided in headers.")
         raise HTTPException(status_code=401, detail="Missing API Key")
     
     hashed_key = hash_api_key(api_key)
@@ -197,21 +200,24 @@ def track_and_get_api_key(api_key: str):
     for key in api_keys:
         if key["api_key_hash"] == hashed_key:
             if key.get("revoked"):
-                raise HTTPException(status_code=403, detail="API key has been revoked")
+                print("[🔒] API key has been revoked.")
+                raise HTTPException(status_code=403, detail="API key has been revoked.")
             # Expiry check
             expires_at = key.get("expires_at")
             if expires_at:
                 try:
                     dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
                     if datetime.now(timezone.utc) > dt:
-                        raise HTTPException(status_code=403, detail="API key has expired")
-                except Exception:
-                    pass  # If parsing fails, ignore expiry
+                        print("[🔒] API key has expired.")
+                        raise HTTPException(status_code=403, detail="API key has expired.")
+                except Exception as e:
+                    print(f"[WARN] Failed to parse expiry: {e}")
             key_to_update = key
             break
 
     if not key_to_update:
-        raise HTTPException(status_code=403, detail="Invalid API Key")
+        print("[🔒] Invalid API key.")
+        raise HTTPException(status_code=403, detail="Invalid API Key.")
 
     today_str = datetime.utcnow().date().isoformat()
     now_iso = datetime.utcnow().isoformat()
@@ -228,4 +234,5 @@ def track_and_get_api_key(api_key: str):
 
     upload_api_keys_to_cloudinary(api_keys)
 
+    print(f"[✅] Valid API key: {api_key}")
     return key_to_update
