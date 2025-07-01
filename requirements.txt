@@ -12,3 +12,4 @@ slowapi
 python-multipart
 cloudinary
 torchvision
+google-generativeai
