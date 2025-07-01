@@ -4,4 +4,4 @@ python-dotenv
 google-generativeai
 cloudinary
 Pillow
-python-multipart
+python-multipart>=0.0.7
