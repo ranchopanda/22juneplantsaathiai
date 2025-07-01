@@ -93,7 +93,10 @@ try:
     redis_client.ping()  # Test connection
     logger.info(f"Connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
 except Exception as e:
-    logger.warning(f"Redis connection failed: {str(e)}. Caching will be disabled.")
+    if os.getenv("ENVIRONMENT") == "production":
+        logger.info(f"Redis connection failed: {str(e)}. Caching will be disabled.")
+    else:
+        logger.warning(f"Redis connection failed: {str(e)}. Caching will be disabled.")
     redis_client = None
 
 # --- Firestore Setup ---
@@ -104,23 +107,36 @@ if os.getenv("ENABLE_FIRESTORE", "false").lower() == "true":
         db = firestore.client()
         logger.info("Connected to Firestore")
     except Exception as e:
-        logger.error(f"Firestore initialization failed: {str(e)}")
+        if os.getenv("ENVIRONMENT") == "production":
+            logger.info(f"Firestore initialization failed: {str(e)}")
+        else:
+            logger.error(f"Firestore initialization failed: {str(e)}")
         # Do not raise here, allow the app to start without Firestore for local dev
 else:
-    logger.warning("Firestore initialization skipped. Set ENABLE_FIRESTORE=true to enable.")
+    if os.getenv("ENVIRONMENT") == "production":
+        logger.info("Firestore initialization skipped. Set ENABLE_FIRESTORE=true to enable.")
+    else:
+        logger.warning("Firestore initialization skipped. Set ENABLE_FIRESTORE=true to enable.")
 
 # --- App Setup ---
 app = FastAPI(
     title="Plant Disease Detection API", 
     description="API for plant disease detection with API key management",
-    version="1.0.0",
+    version=os.getenv("APP_VERSION", "dev"),
     docs_url="/docs" if os.getenv("ENVIRONMENT") != "production" else None,
     redoc_url="/redoc" if os.getenv("ENVIRONMENT") != "production" else None,
 )
 
-@app.get("/")
-def root_health_check():
-    return {"status": "ok"}
+@app.get("/version")
+def get_version():
+    return {"version": app.version}
+
+# Prometheus metrics endpoint
+try:
+    from prometheus_fastapi_instrumentator import Instrumentator
+    Instrumentator().instrument(app).expose(app)
+except ImportError:
+    logger.warning("prometheus_fastapi_instrumentator not installed, /metrics endpoint not available.")
 
 # CORS
 app.add_middleware(
@@ -164,6 +180,9 @@ async def metrics_middleware(request: Request, call_next):
             endpoint=request.url.path
         ).observe(time.time() - start_time)
         
+    # Add X-RateLimit-Remaining if available in request.state
+    if hasattr(request.state, "rate_limit_remaining"):
+        response.headers["X-RateLimit-Remaining"] = str(request.state.rate_limit_remaining)
     return response
 
 # --- API Key Management ---
@@ -734,6 +753,15 @@ from .routes import api_keys
 from .routes import predict
 app.include_router(api_keys.router, dependencies=[Depends(verify_admin_password)])
 app.include_router(predict.router)
+
+# Custom error handlers
+@app.exception_handler(404)
+async def custom_404_handler(request: Request, exc):
+    return JSONResponse(status_code=404, content={"detail": "Not Found."})
+
+@app.exception_handler(500)
+async def custom_500_handler(request: Request, exc):
+    return JSONResponse(status_code=500, content={"detail": "Internal Server Error."})
 
 if __name__ == "__main__":
     import uvicorn
