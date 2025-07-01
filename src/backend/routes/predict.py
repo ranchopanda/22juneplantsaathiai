@@ -32,26 +32,43 @@ def log_event_to_firestore(event: dict):
         db.collection("prediction_events").add(event)
 
 def parse_gemini_response(content: str):
-    # TODO: Implement robust parsing based on your prompt/response format
-    # For now, return a dummy structure
-    return {
-        "disease": "Parse from content",
-        "confidence": 0.85,
-        "severity": "Mild",
-        "stage": "Early",
-        "yield_impact": "Low",
-        "spread_risk": "Moderate",
-        "recovery": "High",
-        "symptoms": ["Yellow spots", "Curled leaves"],
-        "action_plan": {
-            "step_1": "Isolate plant",
-            "step_2": "Apply neem-based fungicide",
-        },
-        "treatments": {
-            "organic": ["Neem oil", "Cow urine spray"],
-            "chemical": ["Chlorothalonil"]
+    """
+    Parses the Gemini API response to extract structured data.
+    """
+    try:
+        # Naive parsing - assumes key-value pairs separated by newlines
+        lines = content.strip().split('\n')
+        data = {}
+        for line in lines:
+            if ':' in line:
+                key, value = line.split(':', 1)
+                data[key.strip()] = value.strip()
+
+        # Fallback for simple string response
+        if not data:
+            return {"disease": content.strip()}
+
+        return {
+            "disease": data.get("disease", "Unknown"),
+            "confidence": float(data.get("confidence", 0.0)),
+            "severity": data.get("severity", "N/A"),
+            "stage": data.get("stage", "N/A"),
+            "yield_impact": data.get("yield_impact", "N/A"),
+            "spread_risk": data.get("spread_risk", "N/A"),
+            "recovery": data.get("recovery", "N/A"),
+            "symptoms": [s.strip() for s in data.get("symptoms", "").split(',')],
+            "action_plan": {
+                "step_1": data.get("action_plan_step_1", "N/A"),
+                "step_2": data.get("action_plan_step_2", "N/A"),
+            },
+            "treatments": {
+                "organic": [t.strip() for t in data.get("organic_treatments", "").split(',')],
+                "chemical": [t.strip() for t in data.get("chemical_treatments", "").split(',')]
+            }
         }
-    }
+    except Exception as e:
+        logging.error(f"Error parsing Gemini response: {e}")
+        return {"error": "Failed to parse response"}
 
 # Gemini-powered inference
 def run_model_on_image(image_bytes: bytes, image_url: str = None, api_key: str = None):
@@ -109,8 +126,34 @@ async def predict_route(request: Request, file: UploadFile = File(...)):
         image_url = upload_result.get("secure_url")
         print(f"[☁️] Uploaded to Cloudinary: {image_url}")
 
+        # Debug: Log prompt, image info, and model
+        prompt = "Detect plant disease in this image and return disease name, confidence score, and recommended actions."
+        print(f"[DEBUG] Prompt: {prompt}")
+        print(f"[DEBUG] Image size: {len(image_bytes)} bytes, MIME: image/jpeg")
+        print(f"[DEBUG] Gemini model: {gemini_model.model_name}")
+
         # Run Gemini model inference
-        result = run_model_on_image(image_bytes, image_url=image_url, api_key=api_key)
+        response = gemini_model.generate_content([
+            prompt,
+            {
+                "mime_type": "image/jpeg",
+                "data": image_bytes
+            }
+        ])
+        content = response.text
+        print(f"[DEBUG] Gemini raw response: {content}")
+        result = parse_gemini_response(content)
+
+        # Log low-confidence or unknown predictions
+        if result.get("confidence", 1.0) < 0.5 or result.get("disease") == "Unknown":
+            log_event_to_firestore({
+                "event": "low_confidence",
+                "image_url": image_url,
+                "confidence": result.get("confidence"),
+                "predicted_class": result.get("disease"),
+                "timestamp": datetime.utcnow().isoformat(),
+                "api_key": api_key
+            })
 
         return {
             "prediction": result,
@@ -125,4 +168,4 @@ async def predict_route(request: Request, file: UploadFile = File(...)):
 
     except Exception as e:
         print(f"[💥] Unexpected Exception: {str(e)}")
-        return JSONResponse(status_code=500, content={"detail": str(e) or "Internal server error"}) 
+        return JSONResponse(status_code=500, content={"detail": str(e) or "Internal server error"})
