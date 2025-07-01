@@ -118,6 +118,10 @@ app = FastAPI(
     redoc_url="/redoc" if os.getenv("ENVIRONMENT") != "production" else None,
 )
 
+@app.get("/")
+def root_health_check():
+    return {"status": "ok"}
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
@@ -730,10 +734,6 @@ from .routes import api_keys
 from .routes import predict
 app.include_router(api_keys.router, dependencies=[Depends(verify_admin_password)])
 app.include_router(predict.router)
-
-@app.get("/")
-def root_health_check():
-    return {"status": "ok"}
 
 if __name__ == "__main__":
     import uvicorn
